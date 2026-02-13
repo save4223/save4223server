@@ -50,6 +50,7 @@ docker-compose ps
 ```
 
 Services will be available at:
+
 - 🌐 **App**: http://localhost:3000
 - 🔧 **Supabase Studio**: http://localhost:54323
 - 🔌 **Supabase API**: http://localhost:8000
@@ -206,31 +207,31 @@ npm run docker:logs      # View logs
 
 ## 🌐 Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API URL | http://localhost:8000 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anonymous API key | - |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key | - |
-| `POSTGRES_HOST` | PostgreSQL host | localhost |
-| `POSTGRES_PORT` | PostgreSQL port | 5432 |
-| `POSTGRES_DB` | Database name | postgres |
-| `POSTGRES_USER` | Database user | supabase_admin |
-| `POSTGRES_PASSWORD` | Database password | - |
-| `JWT_SECRET` | JWT signing secret | - |
+| Variable                        | Description        | Default               |
+| ------------------------------- | ------------------ | --------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase API URL   | http://localhost:8000 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anonymous API key  | -                     |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Service role key   | -                     |
+| `POSTGRES_HOST`                 | PostgreSQL host    | localhost             |
+| `POSTGRES_PORT`                 | PostgreSQL port    | 5432                  |
+| `POSTGRES_DB`                   | Database name      | postgres              |
+| `POSTGRES_USER`                 | Database user      | supabase_admin        |
+| `POSTGRES_PASSWORD`             | Database password  | -                     |
+| `JWT_SECRET`                    | JWT signing secret | -                     |
 
 ## 🐳 Docker Services
 
-| Service | Description | Port |
-|---------|-------------|------|
-| app | Next.js application | 3000 |
-| db | PostgreSQL database | 5432 |
-| kong | API Gateway | 8000, 8443 |
-| auth | GoTrue authentication | - |
-| realtime | WebSocket server | - |
-| storage | File storage | - |
-| rest | PostgREST API | - |
-| studio | Supabase Dashboard | 54323 |
-| edge-functions | Deno edge runtime | - |
+| Service        | Description           | Port       |
+| -------------- | --------------------- | ---------- |
+| app            | Next.js application   | 3000       |
+| db             | PostgreSQL database   | 5432       |
+| kong           | API Gateway           | 8000, 8443 |
+| auth           | GoTrue authentication | -          |
+| realtime       | WebSocket server      | -          |
+| storage        | File storage          | -          |
+| rest           | PostgREST API         | -          |
+| studio         | Supabase Dashboard    | 54323      |
+| edge-functions | Deno edge runtime     | -          |
 
 ## 📚 Learn More
 
