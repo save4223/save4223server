@@ -1,0 +1,492 @@
+# Supabase Local Development Stack
+# Includes: PostgreSQL, Auth, Kong, Realtime, Storage, Edge Functions, etc.
+
+version: "3.8"
+
+services:
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=http://kong:8000
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
+    depends_on:
+      - kong
+    networks:
+      - supabase-network
+
+  # PostgreSQL Database
+  db:
+    image: supabase/postgres:15.1.0.117
+    healthcheck:
+      test: pg_isready -U postgres -h localhost
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: 5432
+      POSTGRES_PORT: 5432
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: ${JWT_EXPIRY}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./supabase/volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - ./supabase/volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - ./supabase/volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./supabase/volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - ./supabase/volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+    ports:
+      - "5432:5432"
+    networks:
+      - supabase-network
+
+  # Kong API Gateway
+  kong:
+    image: kong:2.8.1
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    volumes:
+      - ./supabase/volumes/api/kong.yml:/home/kong/kong.yml:ro
+    ports:
+      - "8000:8000/tcp"
+      - "8443:8443/tcp"
+    depends_on:
+      - analytics
+    networks:
+      - supabase-network
+
+  # GoTrue - Authentication API
+  auth:
+    image: supabase/gotrue:v2.145.0
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9999/health",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP}
+
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP}
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+      GOTRUE_MAILER_URLPATHS_INVITE: ${MAILER_URLPATHS_INVITE}
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: ${MAILER_URLPATHS_CONFIRMATION}
+      GOTRUE_MAILER_URLPATHS_RECOVERY: ${MAILER_URLPATHS_RECOVERY}
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: ${MAILER_URLPATHS_EMAIL_CHANGE}
+
+      GOTRUE_EXTERNAL_PHONE_ENABLED: ${ENABLE_PHONE_SIGNUP}
+      GOTRUE_SMS_AUTOCONFIRM: ${ENABLE_PHONE_AUTOCONFIRM}
+      GOTRUE_SMS_MAX_FREQUENCY: ${SMS_MAX_FREQUENCY}
+      GOTRUE_SMS_OTP_EXP: ${SMS_OTP_EXP}
+      GOTRUE_SMS_OTP_LENGTH: ${SMS_OTP_LENGTH}
+      GOTRUE_SMS_PROVIDER: ${SMS_PROVIDER}
+      GOTRUE_SMS_TWILIO_ACCOUNT_SID: ${SMS_TWILIO_ACCOUNT_SID}
+      GOTRUE_SMS_TWILIO_AUTH_TOKEN: ${SMS_TWILIO_AUTH_TOKEN}
+      GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: ${SMS_TWILIO_MESSAGE_SERVICE_SID}
+      GOTRUE_SMS_TWILIO_CONTENT_SID: ${SMS_TWILIO_CONTENT_SID}
+      GOTRUE_SMS_MESSAGEBIRD_ACCESS_KEY: ${SMS_MESSAGEBIRD_ACCESS_KEY}
+      GOTRUE_SMS_MESSAGEBIRD_ORIGINATOR: ${SMS_MESSAGEBIRD_ORIGINATOR}
+      GOTRUE_SMS_TEXTLOCAL_API_KEY: ${SMS_TEXTLOCAL_API_KEY}
+      GOTRUE_SMS_TEXTLOCAL_SENDER: ${SMS_TEXTLOCAL_SENDER}
+      GOTRUE_SMS_VONAGE_API_KEY: ${SMS_VONAGE_API_KEY}
+      GOTRUE_SMS_VONAGE_API_SECRET: ${SMS_VONAGE_API_SECRET}
+      GOTRUE_SMS_VONAGE_FROM: ${SMS_VONAGE_FROM}
+
+      GOTRUE_EXTERNAL_APPLE_ENABLED: ${EXTERNAL_APPLE_ENABLED}
+      GOTRUE_EXTERNAL_APPLE_CLIENT_ID: ${EXTERNAL_APPLE_CLIENT_ID}
+      GOTRUE_EXTERNAL_APPLE_SECRET: ${EXTERNAL_APPLE_SECRET}
+      GOTRUE_EXTERNAL_APPLE_REDIRECT_URI: ${EXTERNAL_APPLE_REDIRECT_URI}
+      GOTRUE_EXTERNAL_AZURE_ENABLED: ${EXTERNAL_AZURE_ENABLED}
+      GOTRUE_EXTERNAL_AZURE_CLIENT_ID: ${EXTERNAL_AZURE_CLIENT_ID}
+      GOTRUE_EXTERNAL_AZURE_SECRET: ${EXTERNAL_AZURE_SECRET}
+      GOTRUE_EXTERNAL_AZURE_REDIRECT_URI: ${EXTERNAL_AZURE_REDIRECT_URI}
+      GOTRUE_EXTERNAL_BITBUCKET_ENABLED: ${EXTERNAL_BITBUCKET_ENABLED}
+      GOTRUE_EXTERNAL_BITBUCKET_CLIENT_ID: ${EXTERNAL_BITBUCKET_CLIENT_ID}
+      GOTRUE_EXTERNAL_BITBUCKET_SECRET: ${EXTERNAL_BITBUCKET_SECRET}
+      GOTRUE_EXTERNAL_BITBUCKET_REDIRECT_URI: ${EXTERNAL_BITBUCKET_REDIRECT_URI}
+      GOTRUE_EXTERNAL_DISCORD_ENABLED: ${EXTERNAL_DISCORD_ENABLED}
+      GOTRUE_EXTERNAL_DISCORD_CLIENT_ID: ${EXTERNAL_DISCORD_CLIENT_ID}
+      GOTRUE_EXTERNAL_DISCORD_SECRET: ${EXTERNAL_DISCORD_SECRET}
+      GOTRUE_EXTERNAL_DISCORD_REDIRECT_URI: ${EXTERNAL_DISCORD_REDIRECT_URI}
+      GOTRUE_EXTERNAL_FACEBOOK_ENABLED: ${EXTERNAL_FACEBOOK_ENABLED}
+      GOTRUE_EXTERNAL_FACEBOOK_CLIENT_ID: ${EXTERNAL_FACEBOOK_CLIENT_ID}
+      GOTRUE_EXTERNAL_FACEBOOK_SECRET: ${EXTERNAL_FACEBOOK_SECRET}
+      GOTRUE_EXTERNAL_FACEBOOK_REDIRECT_URI: ${EXTERNAL_FACEBOOK_REDIRECT_URI}
+      GOTRUE_EXTERNAL_FIGMA_ENABLED: ${EXTERNAL_FIGMA_ENABLED}
+      GOTRUE_EXTERNAL_FIGMA_CLIENT_ID: ${EXTERNAL_FIGMA_CLIENT_ID}
+      GOTRUE_EXTERNAL_FIGMA_SECRET: ${EXTERNAL_FIGMA_SECRET}
+      GOTRUE_EXTERNAL_FIGMA_REDIRECT_URI: ${EXTERNAL_FIGMA_REDIRECT_URI}
+      GOTRUE_EXTERNAL_GITHUB_ENABLED: ${EXTERNAL_GITHUB_ENABLED}
+      GOTRUE_EXTERNAL_GITHUB_CLIENT_ID: ${EXTERNAL_GITHUB_CLIENT_ID}
+      GOTRUE_EXTERNAL_GITHUB_SECRET: ${EXTERNAL_GITHUB_SECRET}
+      GOTRUE_EXTERNAL_GITHUB_REDIRECT_URI: ${EXTERNAL_GITHUB_REDIRECT_URI}
+      GOTRUE_EXTERNAL_GITLAB_ENABLED: ${EXTERNAL_GITLAB_ENABLED}
+      GOTRUE_EXTERNAL_GITLAB_CLIENT_ID: ${EXTERNAL_GITLAB_CLIENT_ID}
+      GOTRUE_EXTERNAL_GITLAB_SECRET: ${EXTERNAL_GITLAB_SECRET}
+      GOTRUE_EXTERNAL_GITLAB_REDIRECT_URI: ${EXTERNAL_GITLAB_REDIRECT_URI}
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: ${EXTERNAL_GOOGLE_ENABLED}
+      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: ${EXTERNAL_GOOGLE_CLIENT_ID}
+      GOTRUE_EXTERNAL_GOOGLE_SECRET: ${EXTERNAL_GOOGLE_SECRET}
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: ${EXTERNAL_GOOGLE_REDIRECT_URI}
+      GOTRUE_EXTERNAL_KAKAO_ENABLED: ${EXTERNAL_KAKAO_ENABLED}
+      GOTRUE_EXTERNAL_KAKAO_CLIENT_ID: ${EXTERNAL_KAKAO_CLIENT_ID}
+      GOTRUE_EXTERNAL_KAKAO_SECRET: ${EXTERNAL_KAKAO_SECRET}
+      GOTRUE_EXTERNAL_KAKAO_REDIRECT_URI: ${EXTERNAL_KAKAO_REDIRECT_URI}
+      GOTRUE_EXTERNAL_KEYCLOAK_ENABLED: ${EXTERNAL_KEYCLOAK_ENABLED}
+      GOTRUE_EXTERNAL_KEYCLOAK_CLIENT_ID: ${EXTERNAL_KEYCLOAK_CLIENT_ID}
+      GOTRUE_EXTERNAL_KEYCLOAK_SECRET: ${EXTERNAL_KEYCLOAK_SECRET}
+      GOTRUE_EXTERNAL_KEYCLOAK_REDIRECT_URI: ${EXTERNAL_KEYCLOAK_REDIRECT_URI}
+      GOTRUE_EXTERNAL_LINKEDIN_ENABLED: ${EXTERNAL_LINKEDIN_ENABLED}
+      GOTRUE_EXTERNAL_LINKEDIN_CLIENT_ID: ${EXTERNAL_LINKEDIN_CLIENT_ID}
+      GOTRUE_EXTERNAL_LINKEDIN_SECRET: ${EXTERNAL_LINKEDIN_SECRET}
+      GOTRUE_EXTERNAL_LINKEDIN_REDIRECT_URI: ${EXTERNAL_LINKEDIN_REDIRECT_URI}
+      GOTRUE_EXTERNAL_NOTION_ENABLED: ${EXTERNAL_NOTION_ENABLED}
+      GOTRUE_EXTERNAL_NOTION_CLIENT_ID: ${EXTERNAL_NOTION_CLIENT_ID}
+      GOTRUE_EXTERNAL_NOTION_SECRET: ${EXTERNAL_NOTION_SECRET}
+      GOTRUE_EXTERNAL_NOTION_REDIRECT_URI: ${EXTERNAL_NOTION_REDIRECT_URI}
+      GOTRUE_EXTERNAL_TWITCH_ENABLED: ${EXTERNAL_TWITCH_ENABLED}
+      GOTRUE_EXTERNAL_TWITCH_CLIENT_ID: ${EXTERNAL_TWITCH_CLIENT_ID}
+      GOTRUE_EXTERNAL_TWITCH_SECRET: ${EXTERNAL_TWITCH_SECRET}
+      GOTRUE_EXTERNAL_TWITCH_REDIRECT_URI: ${EXTERNAL_TWITCH_REDIRECT_URI}
+      GOTRUE_EXTERNAL_TWITTER_ENABLED: ${EXTERNAL_TWITTER_ENABLED}
+      GOTRUE_EXTERNAL_TWITTER_CLIENT_ID: ${EXTERNAL_TWITTER_CLIENT_ID}
+      GOTRUE_EXTERNAL_TWITTER_SECRET: ${EXTERNAL_TWITTER_SECRET}
+      GOTRUE_EXTERNAL_TWITTER_REDIRECT_URI: ${EXTERNAL_TWITTER_REDIRECT_URI}
+      GOTRUE_EXTERNAL_SLACK_ENABLED: ${EXTERNAL_SLACK_ENABLED}
+      GOTRUE_EXTERNAL_SLACK_CLIENT_ID: ${EXTERNAL_SLACK_CLIENT_ID}
+      GOTRUE_EXTERNAL_SLACK_SECRET: ${EXTERNAL_SLACK_SECRET}
+      GOTRUE_EXTERNAL_SLACK_REDIRECT_URI: ${EXTERNAL_SLACK_REDIRECT_URI}
+      GOTRUE_EXTERNAL_SPOTIFY_ENABLED: ${EXTERNAL_SPOTIFY_ENABLED}
+      GOTRUE_EXTERNAL_SPOTIFY_CLIENT_ID: ${EXTERNAL_SPOTIFY_CLIENT_ID}
+      GOTRUE_EXTERNAL_SPOTIFY_SECRET: ${EXTERNAL_SPOTIFY_SECRET}
+      GOTRUE_EXTERNAL_SPOTIFY_REDIRECT_URI: ${EXTERNAL_SPOTIFY_REDIRECT_URI}
+      GOTRUE_EXTERNAL_WORKOS_ENABLED: ${EXTERNAL_WORKOS_ENABLED}
+      GOTRUE_EXTERNAL_WORKOS_CLIENT_ID: ${EXTERNAL_WORKOS_CLIENT_ID}
+      GOTRUE_EXTERNAL_WORKOS_SECRET: ${EXTERNAL_WORKOS_SECRET}
+      GOTRUE_EXTERNAL_WORKOS_REDIRECT_URI: ${EXTERNAL_WORKOS_REDIRECT_URI}
+      GOTRUE_EXTERNAL_ZOOM_ENABLED: ${EXTERNAL_ZOOM_ENABLED}
+      GOTRUE_EXTERNAL_ZOOM_CLIENT_ID: ${EXTERNAL_ZOOM_CLIENT_ID}
+      GOTRUE_EXTERNAL_ZOOM_SECRET: ${EXTERNAL_ZOOM_SECRET}
+      GOTRUE_EXTERNAL_ZOOM_REDIRECT_URI: ${EXTERNAL_ZOOM_REDIRECT_URI}
+
+      GOTRUE_HOOK_MFA_VERIFICATION_ATTEMPT_ENABLED: ${HOOK_MFA_VERIFICATION_ATTEMPT_ENABLED}
+      GOTRUE_HOOK_MFA_VERIFICATION_ATTEMPT_URI: ${HOOK_MFA_VERIFICATION_ATTEMPT_URI}
+      GOTRUE_HOOK_MFA_VERIFICATION_ATTEMPT_SECRETS: ${HOOK_MFA_VERIFICATION_ATTEMPT_SECRETS}
+      GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_ENABLED: ${HOOK_PASSWORD_VERIFICATION_ATTEMPT_ENABLED}
+      GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_URI: ${HOOK_PASSWORD_VERIFICATION_ATTEMPT_URI}
+      GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_SECRETS: ${HOOK_PASSWORD_VERIFICATION_ATTEMPT_SECRETS}
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED: ${HOOK_CUSTOM_ACCESS_TOKEN_ENABLED}
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI: ${HOOK_CUSTOM_ACCESS_TOKEN_URI}
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_SECRETS: ${HOOK_CUSTOM_ACCESS_TOKEN_SECRETS}
+      GOTRUE_HOOK_SEND_SMS_ENABLED: ${HOOK_SEND_SMS_ENABLED}
+      GOTRUE_HOOK_SEND_SMS_URI: ${HOOK_SEND_SMS_URI}
+      GOTRUE_HOOK_SEND_SMS_SECRETS: ${HOOK_SEND_SMS_SECRETS}
+      GOTRUE_HOOK_SEND_EMAIL_ENABLED: ${HOOK_SEND_EMAIL_ENABLED}
+      GOTRUE_HOOK_SEND_EMAIL_URI: ${HOOK_SEND_EMAIL_URI}
+      GOTRUE_HOOK_SEND_EMAIL_SECRETS: ${HOOK_SEND_EMAIL_SECRETS}
+
+      GOTRUE_SECURITY_CAPTCHA_ENABLED: ${ENABLE_CAPTCHA}
+      GOTRUE_SECURITY_CAPTCHA_PROVIDER: ${CAPTCHA_PROVIDER}
+      GOTRUE_SECURITY_CAPTCHA_SECRET: ${CAPTCHA_SECRET}
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: ${REFRESH_TOKEN_ROTATION_ENABLED}
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: ${REFRESH_TOKEN_REUSE_INTERVAL}
+      GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_REAUTHENTICATION: ${PASSWORD_REAUTHENTICATION_ENABLED}
+    networks:
+      - supabase-network
+
+  # Realtime - WebSocket server for real-time updates
+  realtime:
+    image: supabase/realtime:v2.28.32
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-sSfL",
+          "--head",
+          "-o",
+          "/dev/null",
+          "-H",
+          "Authorization: Bearer ${ANON_KEY}",
+          "http://localhost:4000/api/tenants/realtime-dev/health",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: ${SECRET_KEY_BASE}
+      FLY_ALLOC_ID: fly_alloc_id
+      FLY_APP_NAME: realtime
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: 'false'
+      DNS_NODES: ''
+      SEED_SELF_HOST: true
+      JWT_SECRET: ${JWT_SECRET}
+      MAX_CONNECTIONS: 10000
+      APP_NAME: realtime
+      APP_REVISION: realtime
+      METRICS_JEST_ENABLED: 'false'
+      METRICS_GRPC_ENABLED: 'false'
+      METRICS_EXPORTER_ENABLED: 'false'
+      REGION: local
+      MAX_CHANNELS_PER_CLIENT: 100
+      MAX_JOINS_PER_SECOND: 100
+      MAX_SUBSCRIBERS: 1000
+      MAX_EVENTS_PER_SECOND: 100
+    networks:
+      - supabase-network
+
+  # Storage - File storage API
+  storage:
+    image: supabase/storage-api:v1.5.1
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5000/status",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: local
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:5001
+      UPLOAD_SIGNED_URL_EXPIRATION_TIME: 120
+    volumes:
+      - storage-data:/var/lib/storage
+    networks:
+      - supabase-network
+
+  # Image proxy for storage transformations
+  imgproxy:
+    image: darthsim/imgproxy:v3.8.0
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      IMGPROXY_BIND: ":5001"
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+    networks:
+      - supabase-network
+
+  # Meta - Database management API
+  meta:
+    image: supabase/postgres-meta:v0.80.0
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: ${POSTGRES_DB}
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - supabase-network
+
+  # Edge Functions
+  functions:
+    image: supabase/edge-runtime:v1.54.6
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_DB_URL: postgresql://supabase_functions_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Add your env vars here
+    volumes:
+      - ./supabase/functions:/home/deno/functions:Z
+    networks:
+      - supabase-network
+
+  # Analytics - Logflare for logs and analytics
+  analytics:
+    image: supabase/logflare:1.4.0
+    healthcheck:
+      test: [ "CMD", "curl", "-sSfL", "--head", "-o", "/dev/null", "http://localhost:4000/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    environment:
+      LOGGER_API_TOKEN: ${LOGFLARE_LOGGER_BACKEND_API_KEY}
+      LOGFLARE_API_KEY: ${LOGFLARE_API_KEY}
+      LOGFLARE_MIN_CLUSTER_SIZE: "1"
+    networks:
+      - supabase-network
+
+  # Vector - Log collection
+  vector:
+    image: timberio/vector:0.28.1-alpine
+    healthcheck:
+      test:
+        [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://vector:9001/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    volumes:
+      - ./supabase/volumes/logs/vector.yml:/etc/vector/vector.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LOGFLARE_API_KEY: ${LOGFLARE_API_KEY}
+    networks:
+      - supabase-network
+
+  # PostgREST - REST API for PostgreSQL
+  rest:
+    image: postgrest/postgrest:v12.0.1
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+    networks:
+      - supabase-network
+
+  # Studio - Supabase Dashboard
+  studio:
+    image: supabase/studio:20240701-beta.1
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/api/profile', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      analytics:
+        condition: service_healthy
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEFAULT_ORGANIZATION_NAME: Default Organization
+      DEFAULT_PROJECT_NAME: Default Project
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_ORGANIZATION: ${OPENAI_ORGANIZATION:-}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      LOGFLARE_API_KEY: ${LOGFLARE_API_KEY}
+      LOGFLARE_URL: http://analytics:4000
+      NEXT_PUBLIC_ENABLE_LOGS: true
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+    ports:
+      - "54323:3000"
+    networks:
+      - supabase-network
+
+volumes:
+  postgres-data:
+  storage-data:
+
+networks:
+  supabase-network:
+    driver: bridge
