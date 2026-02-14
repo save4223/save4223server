@@ -6,16 +6,63 @@ Row Level Security (RLS) policies for Save4223 Smart Inventory System.
 
 | 文件 | 说明 |
 |------|------|
-| `../migrations/0001_rls_policies.sql` | **主要文件** - 通过 `supabase db reset` 自动应用 |
-| `01_rls_policies.sql` | 备份/参考文件 |
+| `seed.sql` | **主要文件** - 包含 RLS policies，在 `supabase db reset` 后自动执行 |
+| `0001_rls_policies.sql` | 备份/参考文件 |
+| `README.md` | 本文件 |
 
-## ⚠️ 重要: PostgreSQL 不支持 `CREATE POLICY IF NOT EXISTS`
+## ⚠️ 重要: 数据库结构由 Drizzle ORM 管理
 
-使用以下模式:
-```sql
-DROP POLICY IF EXISTS "policy_name" ON table_name;
-CREATE POLICY "policy_name" ON table_name ...;
+**执行顺序：**
+1. `supabase db reset` - 重置数据库，运行 seed.sql
+2. `npx drizzle-kit migrate` - 应用 Drizzle 迁移，创建表结构
+
+**RLS Policies 放在 seed.sql 中**，因为它：
+- 在 schema 初始化后运行
+- 使用 `DO $$` 块检查表是否存在，不会报错
+- 即使表不存在也能安全执行
+
+## 🚀 部署方式
+
+### 方式 1: 自动部署 (推荐)
+
+```bash
+# 1. 重置数据库 (会自动执行 seed.sql)
+npx supabase db reset
+
+# 2. 应用 Drizzle 迁移创建表
+npx drizzle-kit migrate
+
+# 3. 重新运行 seed.sql 应用 RLS (因为表现在存在了)
+npx supabase db reset
 ```
+
+**或者更简单的流程：**
+
+```bash
+# 1. 先确保表存在
+npx drizzle-kit migrate
+
+# 2. 然后重置并应用 RLS
+npx supabase db reset
+```
+
+### 方式 2: 手动应用
+
+如果只需要应用 RLS 而不想重置数据库：
+
+```bash
+# 使用 psql 执行
+psql -h localhost -p 54322 -U postgres -d postgres -f supabase/seed.sql
+```
+
+或在 Supabase Studio SQL Editor 中执行 `seed.sql` 内容。
+
+### 方式 3: Supabase Studio
+
+1. 打开 http://127.0.0.1:54323
+2. SQL Editor → New query
+3. 复制 `supabase/seed.sql` 内容
+4. Run
 
 ## 表权限矩阵
 
@@ -30,51 +77,11 @@ CREATE POLICY "policy_name" ON table_name ...;
 | cabinet_sessions | 自己/管理员 | Edge | - | - | 会话记录 |
 | inventory_transactions | 自己/管理员 | Edge | - | - | 交易记录 |
 
-## 部署方式
-
-### 方式 1: Supabase CLI (推荐)
-
-```bash
-# 会自动执行 migrations 目录下的所有文件
-supabase db reset
-```
-
-### 方式 2: Supabase Studio
-
-1. 打开 http://127.0.0.1:54323 (本地) 或 https://supabase.com/dashboard
-2. 进入 SQL Editor
-3. 新建 Query
-4. 复制 `supabase/migrations/0001_rls_policies.sql` 全部内容
-5. 点击 **Run**
-
-### 方式 3: psql
-
-```bash
-psql -h localhost -p 54322 -U postgres -d postgres -f supabase/migrations/0001_rls_policies.sql
-```
-
 ## 角色说明
 
 - **anon** - 未认证用户 (权限最小)
 - **authenticated** - 已登录用户
 - **service_role** - 服务端角色 (Edge device, 绕过 RLS)
-
-## 手动启用 RLS (如果不生效)
-
-```sql
--- 为单个表启用 RLS
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE access_permissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_cards ENABLE ROW LEVEL SECURITY;
-ALTER TABLE item_types ENABLE ROW LEVEL SECURITY;
-ALTER TABLE items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cabinet_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory_transactions ENABLE ROW LEVEL SECURITY;
-
--- 强制对所有角色启用 RLS (包括 table owner)
-ALTER TABLE profiles FORCE ROW LEVEL SECURITY;
-```
 
 ## 验证 RLS 是否生效
 
@@ -102,36 +109,19 @@ FROM pg_policies
 WHERE schemaname = 'public';
 ```
 
-## 测试 RLS
-
-```sql
--- 模拟不同用户查询 (需要 superuser)
-SET ROLE authenticated;
-SELECT * FROM items;  -- 应该能看到
-SET ROLE anon;
-SELECT * FROM items;  -- 应该被阻止 (如果没有对 anon 的策略)
-RESET ROLE;
-```
-
 ## 常见问题
 
+### Q: `supabase db reset` 报错 "relation does not exist"?
+A: 确保先运行 `npx drizzle-kit migrate` 创建表，然后再运行 `supabase db reset`。
+
 ### Q: Edge device 无法写入数据？
-A: Edge device 应该使用 `service_role` key，它会绕过 RLS。确保你的 Edge API 使用正确的 key。
+A: Edge device 应该使用 `service_role` key，它会绕过 RLS。
 
 ### Q: 用户能看到别人的数据？
-A: 检查 policy 中的 `USING` 条件是否正确。例如 `user_id = auth.uid()` 确保只能看自己的。
-
-### Q: 如何临时禁用 RLS？
-A: 
-```sql
-ALTER TABLE items DISABLE ROW LEVEL SECURITY;
--- 或者
-ALTER TABLE items FORCE ROW LEVEL SECURITY;  -- 重新启用
-```
+A: 检查 policy 中的 `USING` 条件，确保有 `user_id = auth.uid()`。
 
 ## 安全建议
 
 1. **生产环境务必启用 RLS**
 2. **service_role key 不要泄露到前端**
 3. **定期审计 policies**
-4. **测试时使用 anon/authenticated 角色模拟真实用户**
