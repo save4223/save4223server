@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type Category = 'ALL' | 'TOOL' | 'DEVICE' | 'CONSUMABLE'
@@ -25,69 +25,6 @@ interface ToolType {
   maxBorrowDuration: string
   items: ToolItem[]
 }
-
-// 模拟数据 - 替换为 API 调用
-const mockTools: ToolType[] = [
-  {
-    id: 1,
-    name: 'Digital Oscilloscope',
-    category: 'DEVICE',
-    description: '100MHz digital oscilloscope for signal analysis and debugging',
-    imageUrl: null,
-    maxBorrowDuration: '14 days',
-    items: [
-      { id: '1', rfidTag: 'RFID-OSC-001', status: 'BORROWED', holderName: 'Vicky', holderEmail: 'vicky@example.com', dueAt: '2026-02-28T07:42:21Z', homeLocation: 'Cabinet A' },
-      { id: '2', rfidTag: 'RFID-OSC-002', status: 'AVAILABLE', holderName: null, holderEmail: null, dueAt: null, homeLocation: 'Cabinet A' },
-      { id: '3', rfidTag: 'RFID-OSC-003', status: 'AVAILABLE', holderName: null, holderEmail: null, dueAt: null, homeLocation: 'Cabinet A' },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Precision Screwdriver Set',
-    category: 'TOOL',
-    description: 'Professional precision screwdrivers for electronics repair',
-    imageUrl: null,
-    maxBorrowDuration: '7 days',
-    items: [
-      { id: '4', rfidTag: 'RFID-TOOL-001', status: 'AVAILABLE', holderName: null, holderEmail: null, dueAt: null, homeLocation: 'Drawer 1' },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Multimeter',
-    category: 'DEVICE',
-    description: 'Digital multimeter for voltage, current, and resistance measurement',
-    imageUrl: null,
-    maxBorrowDuration: '7 days',
-    items: [
-      { id: '5', rfidTag: 'RFID-MUL-001', status: 'BORROWED', holderName: 'Jason', holderEmail: 'jason@example.com', dueAt: '2026-02-20T07:42:21Z', homeLocation: 'Cabinet B' },
-      { id: '6', rfidTag: 'RFID-MUL-002', status: 'BORROWED', holderName: 'Alice', holderEmail: 'alice@example.com', dueAt: '2026-03-01T07:42:21Z', homeLocation: 'Cabinet B' },
-    ],
-  },
-  {
-    id: 4,
-    name: 'Soldering Station',
-    category: 'TOOL',
-    description: 'Temperature controlled soldering station with various tips',
-    imageUrl: null,
-    maxBorrowDuration: '14 days',
-    items: [
-      { id: '7', rfidTag: 'RFID-SOL-001', status: 'MAINTENANCE', holderName: null, holderEmail: null, dueAt: null, homeLocation: 'Workshop' },
-    ],
-  },
-  {
-    id: 5,
-    name: '3D Printer Filament',
-    category: 'CONSUMABLE',
-    description: 'PLA filament 1.75mm in various colors',
-    imageUrl: null,
-    maxBorrowDuration: '30 days',
-    items: [
-      { id: '8', rfidTag: 'RFID-FIL-001', status: 'AVAILABLE', holderName: null, holderEmail: null, dueAt: null, homeLocation: 'Storage' },
-      { id: '9', rfidTag: 'RFID-FIL-002', status: 'AVAILABLE', holderName: null, holderEmail: null, dueAt: null, homeLocation: 'Storage' },
-    ],
-  },
-]
 
 const CATEGORIES: { key: Category; label: string; icon: string }[] = [
   { key: 'ALL', label: '全部', icon: '🔍' },
@@ -134,12 +71,33 @@ function CategoryBadge({ category }: { category: string }) {
 }
 
 export default function ToolsGalleryPage() {
+  const [tools, setTools] = useState<ToolType[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category>('ALL')
 
+  // Fetch tools from API
+  useEffect(() => {
+    async function fetchTools() {
+      try {
+        setLoading(true)
+        const res = await fetch('/api/tools')
+        if (!res.ok) throw new Error('Failed to fetch tools')
+        const data = await res.json()
+        setTools(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTools()
+  }, [])
+
   // 过滤工具
   const filteredTools = useMemo(() => {
-    return mockTools.filter((tool) => {
+    return tools.filter((tool) => {
       // 分类过滤
       if (selectedCategory !== 'ALL' && tool.category !== selectedCategory) {
         return false
@@ -158,7 +116,7 @@ export default function ToolsGalleryPage() {
       
       return true
     })
-  }, [searchQuery, selectedCategory])
+  }, [tools, searchQuery, selectedCategory])
 
   // 统计
   const stats = useMemo(() => {
@@ -167,6 +125,39 @@ export default function ToolsGalleryPage() {
     const availableItems = filteredTools.reduce((sum, t) => sum + t.items.filter(i => i.status === 'AVAILABLE').length, 0)
     return { totalTypes, totalItems, availableItems }
   }, [filteredTools])
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+            <p className="mt-4 text-gray-600">加载中...</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <div className="flex h-screen items-center justify-center">
+          <div className="rounded-2xl bg-white p-8 text-center shadow">
+            <div className="text-4xl">⚠️</div>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">加载失败</h3>
+            <p className="mt-2 text-gray-500">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -230,14 +221,16 @@ export default function ToolsGalleryPage() {
         {filteredTools.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-20 text-center">
             <div className="text-6xl">🔍</div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">未找到匹配的工具</h3>
-            <p className="mt-1 text-gray-500">尝试调整搜索词或筛选条件</p>
-            <button
-              onClick={() => { setSearchQuery(''); setSelectedCategory('ALL') }}
-              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              清除筛选
-            </button>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">{tools.length === 0 ? '暂无工具数据' : '未找到匹配的工具'}</h3>
+            <p className="mt-1 text-gray-500">{tools.length === 0 ? '请先添加工具类型和工具' : '尝试调整搜索词或筛选条件'}</p>
+            {tools.length > 0 && (
+              <button
+                onClick={() => { setSearchQuery(''); setSelectedCategory('ALL') }}
+                className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                清除筛选
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -309,7 +302,7 @@ export default function ToolsGalleryPage() {
                           
                           {/* 悬停提示 */}
                           {item.status === 'BORROWED' && item.holderName && (
-                            <div className="absolute bottom-full left-0 mb-2 hidden w-max max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">
+                            <div className="absolute bottom-full left-0 mb-2 hidden w-max max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block z-10">
                               <div>借用人: {item.holderName}</div>
                               <div>邮箱: {item.holderEmail}</div>
                               <div>应还: {item.dueAt ? new Date(item.dueAt).toLocaleDateString('zh-CN') : '-'}</div>
