@@ -119,12 +119,17 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Query items
     const itemsData = await db.query.items.findMany({
       where: inArray(items.rfidTag, allRfids),
-      with: {
-        itemType: true,
-      },
     })
+
+    // Query item types separately for borrow duration
+    const itemTypeIds = [...new Set(itemsData.map(item => item.itemTypeId))]
+    const itemTypesData = await db.query.itemTypes.findMany({
+      where: inArray(itemTypes.id, itemTypeIds),
+    })
+    const itemTypeMap = new Map(itemTypesData.map(t => [t.id, t]))
 
     const rfidToItem = new Map(itemsData.map(item => [item.rfidTag, item]))
 
@@ -141,7 +146,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Calculate due date
-      const borrowDuration = item.itemType?.maxBorrowDuration || '7 days'
+      const itemType = itemTypeMap.get(item.itemTypeId)
+      const borrowDuration = itemType?.maxBorrowDuration || '7 days'
       const dueAt = new Date(now)
       // Parse interval like "7 days"
       const days = parseInt(borrowDuration.split(' ')[0]) || 7
