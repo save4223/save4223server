@@ -15,6 +15,7 @@ export async function GET() {
     }
     
     // 获取所有物品，关联位置和借用人信息
+    // 注意: items 表使用 home_location_id 不是 location_id
     const allItems = await db
       .select({
         item: items,
@@ -22,7 +23,7 @@ export async function GET() {
         holder: profiles,
       })
       .from(items)
-      .leftJoin(locations, eq(items.locationId, locations.id))
+      .leftJoin(locations, eq(items.homeLocationId, locations.id))
       .leftJoin(profiles, eq(items.currentHolderId, profiles.id))
 
     // 按工具类型分组

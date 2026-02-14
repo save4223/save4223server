@@ -3,7 +3,6 @@
 -- ============================================
 -- 
 -- 这个文件会在 `supabase db reset` 后自动执行
--- 用于插入测试数据和应用 RLS policies
 
 -- ============================================
 -- 1. RLS Policies
@@ -114,6 +113,7 @@ DECLARE
     v_osc_id INTEGER;
     v_tool_id INTEGER;
     v_multi_id INTEGER;
+    v_solder_id INTEGER;
 BEGIN
     -- 检查表是否存在
     IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles') THEN
@@ -128,12 +128,12 @@ BEGIN
         (v_user_id, 'vicky@example.com', 'Vicky', 'USER', NOW())
     ON CONFLICT (id) DO NOTHING;
 
-    -- 2.2 插入位置
-    INSERT INTO locations (name, description, is_restricted, created_at)
+    -- 2.2 插入位置 (注意: 列名是 type 不是 description, is_restricted 不是 isRestricted)
+    INSERT INTO locations (name, type, is_restricted, created_at)
     VALUES 
-        ('Cabinet A', 'Open access cabinet', false, NOW()),
-        ('Cabinet B', 'Restricted cabinet', true, NOW()),
-        ('Drawer 1', 'Tool drawer', false, NOW())
+        ('Cabinet A', 'CABINET', false, NOW()),
+        ('Cabinet B', 'CABINET', true, NOW()),
+        ('Drawer 1', 'DRAWER', false, NOW())
     ON CONFLICT DO NOTHING;
 
     -- 获取位置 ID
@@ -141,10 +141,10 @@ BEGIN
     SELECT id INTO v_cabinet_b_id FROM locations WHERE name = 'Cabinet B' LIMIT 1;
     SELECT id INTO v_drawer_id FROM locations WHERE name = 'Drawer 1' LIMIT 1;
 
-    -- 2.3 插入权限申请 (Vicky 可以访问 Cabinet B)
-    INSERT INTO access_permissions (user_id, location_id, status, approved_by, approved_at, created_at)
+    -- 2.3 插入权限申请
+    INSERT INTO access_permissions (user_id, location_id, status, approved_by, created_at)
     VALUES 
-        (v_user_id, v_cabinet_b_id, 'APPROVED', v_admin_id, NOW(), NOW())
+        (v_user_id, v_cabinet_b_id, 'APPROVED', v_admin_id, NOW())
     ON CONFLICT DO NOTHING;
 
     -- 2.4 插入用户卡片
@@ -166,9 +166,10 @@ BEGIN
     SELECT id INTO v_osc_id FROM item_types WHERE name = 'Digital Oscilloscope' LIMIT 1;
     SELECT id INTO v_tool_id FROM item_types WHERE name = 'Precision Screwdriver Set' LIMIT 1;
     SELECT id INTO v_multi_id FROM item_types WHERE name = 'Multimeter' LIMIT 1;
+    SELECT id INTO v_solder_id FROM item_types WHERE name = 'Soldering Station' LIMIT 1;
 
-    -- 2.6 插入工具个体
-    INSERT INTO items (item_type_id, rfid_tag, status, location_id, current_holder_id, due_at, created_at)
+    -- 2.6 插入工具个体 (注意: 列名是 home_location_id 不是 location_id)
+    INSERT INTO items (item_type_id, rfid_tag, status, home_location_id, current_holder_id, due_at, created_at)
     VALUES 
         -- Oscilloscopes
         (v_osc_id, 'RFID-OSC-001', 'BORROWED', v_cabinet_a_id, v_user_id, NOW() + INTERVAL '14 days', NOW()),
@@ -180,7 +181,7 @@ BEGIN
         (v_multi_id, 'RFID-MUL-001', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '5 days', NOW()),
         (v_multi_id, 'RFID-MUL-002', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '12 days', NOW()),
         -- Soldering Station
-        (v_tool_id + 2, 'RFID-SOL-001', 'MAINTENANCE', v_cabinet_a_id, NULL, NULL, NOW())
+        (v_solder_id, 'RFID-SOL-001', 'MAINTENANCE', v_cabinet_a_id, NULL, NULL, NOW())
     ON CONFLICT (rfid_tag) DO NOTHING;
 
     RAISE NOTICE 'Mock data inserted successfully!';
