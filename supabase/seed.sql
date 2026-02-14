@@ -1,8 +1,6 @@
 -- ============================================
 -- Save4223 Database Seed File
 -- ============================================
--- 
--- 这个文件会在 `supabase db reset` 后自动执行
 
 -- ============================================
 -- 1. RLS Policies
@@ -10,7 +8,6 @@
 
 DO $$
 BEGIN
-    -- Profiles 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles') THEN
         ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON profiles;
@@ -19,7 +16,6 @@ BEGIN
         CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
     END IF;
 
-    -- Locations 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'locations') THEN
         ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Locations are viewable by authenticated users" ON locations;
@@ -30,7 +26,6 @@ BEGIN
         );
     END IF;
 
-    -- Access Permissions 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'access_permissions') THEN
         ALTER TABLE access_permissions ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Users can view own permissions" ON access_permissions;
@@ -45,7 +40,6 @@ BEGIN
         );
     END IF;
 
-    -- User Cards 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_cards') THEN
         ALTER TABLE user_cards ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Users can view own cards" ON user_cards;
@@ -58,7 +52,6 @@ BEGIN
         );
     END IF;
 
-    -- Item Types 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'item_types') THEN
         ALTER TABLE item_types ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Item types are viewable by authenticated users" ON item_types;
@@ -69,7 +62,6 @@ BEGIN
         );
     END IF;
 
-    -- Items 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'items') THEN
         ALTER TABLE items ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Items are viewable by authenticated users" ON items;
@@ -80,7 +72,6 @@ BEGIN
         );
     END IF;
 
-    -- Cabinet Sessions 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'cabinet_sessions') THEN
         ALTER TABLE cabinet_sessions ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Users can view own sessions" ON cabinet_sessions;
@@ -89,7 +80,6 @@ BEGIN
         );
     END IF;
 
-    -- Inventory Transactions 表
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'inventory_transactions') THEN
         ALTER TABLE inventory_transactions ENABLE ROW LEVEL SECURITY;
         DROP POLICY IF EXISTS "Users can view own transactions" ON inventory_transactions;
@@ -121,7 +111,7 @@ BEGIN
         RETURN;
     END IF;
 
-    -- 2.1 插入用户资料
+    -- 2.1 插入用户资料 (id 是主键，有唯一约束)
     INSERT INTO profiles (id, email, full_name, role, created_at)
     VALUES 
         (v_admin_id, 'admin@example.com', 'Admin User', 'ADMIN', NOW()),
@@ -141,26 +131,36 @@ BEGIN
     SELECT id INTO v_cabinet_b_id FROM locations WHERE name = 'Cabinet B' LIMIT 1;
     SELECT id INTO v_drawer_id FROM locations WHERE name = 'Drawer 1' LIMIT 1;
 
-    -- 2.3 插入权限申请
+    -- 2.3 插入权限申请 (没有唯一约束，用 WHERE NOT EXISTS 避免重复)
     INSERT INTO access_permissions (user_id, location_id, status, approved_by, created_at)
-    VALUES 
-        (v_user_id, v_cabinet_b_id, 'APPROVED', v_admin_id, NOW())
-    ON CONFLICT DO NOTHING;
+    SELECT v_user_id, v_cabinet_b_id, 'APPROVED', v_admin_id, NOW()
+    WHERE NOT EXISTS (
+        SELECT 1 FROM access_permissions 
+        WHERE user_id = v_user_id AND location_id = v_cabinet_b_id
+    );
 
-    -- 2.4 插入用户卡片
+    -- 2.4 插入用户卡片 (card_uid 有 unique 约束)
     INSERT INTO user_cards (user_id, card_uid, is_active, created_at)
     VALUES 
         (v_user_id, 'TEST123', true, NOW())
     ON CONFLICT (card_uid) DO NOTHING;
 
-    -- 2.5 插入工具类型
+    -- 2.5 插入工具类型 (name 没有唯一约束，用 WHERE NOT EXISTS)
     INSERT INTO item_types (name, category, description, max_borrow_duration, created_at)
-    VALUES 
-        ('Digital Oscilloscope', 'DEVICE', '100MHz digital oscilloscope for signal analysis and debugging', '14 days', NOW()),
-        ('Precision Screwdriver Set', 'TOOL', 'Professional precision screwdrivers for electronics repair', '7 days', NOW()),
-        ('Multimeter', 'DEVICE', 'Digital multimeter for voltage, current, and resistance measurement', '7 days', NOW()),
-        ('Soldering Station', 'TOOL', 'Temperature controlled soldering station with various tips', '14 days', NOW())
-    ON CONFLICT (name) DO NOTHING;
+    SELECT 'Digital Oscilloscope', 'DEVICE', '100MHz digital oscilloscope for signal analysis and debugging', '14 days', NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM item_types WHERE name = 'Digital Oscilloscope');
+
+    INSERT INTO item_types (name, category, description, max_borrow_duration, created_at)
+    SELECT 'Precision Screwdriver Set', 'TOOL', 'Professional precision screwdrivers for electronics repair', '7 days', NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM item_types WHERE name = 'Precision Screwdriver Set');
+
+    INSERT INTO item_types (name, category, description, max_borrow_duration, created_at)
+    SELECT 'Multimeter', 'DEVICE', 'Digital multimeter for voltage, current, and resistance measurement', '7 days', NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM item_types WHERE name = 'Multimeter');
+
+    INSERT INTO item_types (name, category, description, max_borrow_duration, created_at)
+    SELECT 'Soldering Station', 'TOOL', 'Temperature controlled soldering station with various tips', '14 days', NOW()
+    WHERE NOT EXISTS (SELECT 1 FROM item_types WHERE name = 'Soldering Station');
 
     -- 获取工具类型 ID
     SELECT id INTO v_osc_id FROM item_types WHERE name = 'Digital Oscilloscope' LIMIT 1;
@@ -168,20 +168,16 @@ BEGIN
     SELECT id INTO v_multi_id FROM item_types WHERE name = 'Multimeter' LIMIT 1;
     SELECT id INTO v_solder_id FROM item_types WHERE name = 'Soldering Station' LIMIT 1;
 
-    -- 2.6 插入工具个体 (注意: 列名是 home_location_id 不是 location_id)
-    INSERT INTO items (item_type_id, rfid_tag, status, home_location_id, current_holder_id, due_at, created_at)
+    -- 2.6 插入工具个体 (rfid_tag 有 unique 约束, items 表没有 created_at)
+    INSERT INTO items (item_type_id, rfid_tag, status, home_location_id, current_holder_id, due_at)
     VALUES 
-        -- Oscilloscopes
-        (v_osc_id, 'RFID-OSC-001', 'BORROWED', v_cabinet_a_id, v_user_id, NOW() + INTERVAL '14 days', NOW()),
-        (v_osc_id, 'RFID-OSC-002', 'AVAILABLE', v_cabinet_a_id, NULL, NULL, NOW()),
-        (v_osc_id, 'RFID-OSC-003', 'AVAILABLE', v_cabinet_a_id, NULL, NULL, NOW()),
-        -- Screwdriver
-        (v_tool_id, 'RFID-TOOL-001', 'AVAILABLE', v_drawer_id, NULL, NULL, NOW()),
-        -- Multimeters
-        (v_multi_id, 'RFID-MUL-001', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '5 days', NOW()),
-        (v_multi_id, 'RFID-MUL-002', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '12 days', NOW()),
-        -- Soldering Station
-        (v_solder_id, 'RFID-SOL-001', 'MAINTENANCE', v_cabinet_a_id, NULL, NULL, NOW())
+        (v_osc_id, 'RFID-OSC-001', 'BORROWED', v_cabinet_a_id, v_user_id, NOW() + INTERVAL '14 days'),
+        (v_osc_id, 'RFID-OSC-002', 'AVAILABLE', v_cabinet_a_id, NULL, NULL),
+        (v_osc_id, 'RFID-OSC-003', 'AVAILABLE', v_cabinet_a_id, NULL, NULL),
+        (v_tool_id, 'RFID-TOOL-001', 'AVAILABLE', v_drawer_id, NULL, NULL),
+        (v_multi_id, 'RFID-MUL-001', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '5 days'),
+        (v_multi_id, 'RFID-MUL-002', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '12 days'),
+        (v_solder_id, 'RFID-SOL-001', 'MAINTENANCE', v_cabinet_a_id, NULL, NULL)
     ON CONFLICT (rfid_tag) DO NOTHING;
 
     RAISE NOTICE 'Mock data inserted successfully!';
