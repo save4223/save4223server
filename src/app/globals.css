@@ -1,26 +1,41 @@
 @import "tailwindcss";
+@import "daisyui";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@plugin "daisyui/theme" {
+  name: "isd";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(98% 0.003 247.858);
+  --color-base-200: oklch(96% 0.007 247.896);
+  --color-base-300: oklch(92% 0.013 255.508);
+  --color-base-content: oklch(27% 0.041 260.031);
+  --color-primary: #F1F7FF;
+  --color-primary-content: #003974;
+  --color-secondary: #FFF4F2;
+  --color-secondary-content: #EC7B60;
+  --color-accent: #003974;
+  --color-accent-content: #FFFFFF;
+  --color-neutral: oklch(95% 0.026 236.824);
+  --color-neutral-content: oklch(27% 0.041 260.031);
+  --color-info: oklch(82% 0.111 230.318);
+  --color-info-content: oklch(29% 0.066 243.157);
+  --color-success: oklch(87% 0.15 154.449);
+  --color-success-content: oklch(27% 0.072 132.109);
+  --color-warning: oklch(83% 0.128 66.29);
+  --color-warning-content: oklch(26% 0.079 36.259);
+  --color-error: oklch(71% 0.194 13.428);
+  --color-error-content: oklch(28% 0.109 3.907);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 1;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

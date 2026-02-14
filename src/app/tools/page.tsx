@@ -36,26 +36,13 @@ const CATEGORIES: { key: Category; label: string; icon: string }[] = [
 function StatusBadge({ status, dueAt }: { status: ItemStatus; dueAt: string | null }) {
   const isOverdue = dueAt && new Date(dueAt) < new Date()
   
-  const configs = {
-    AVAILABLE: { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', label: '可借' },
-    BORROWED: { 
-      bg: isOverdue ? 'bg-red-100' : 'bg-amber-100', 
-      text: isOverdue ? 'text-red-700' : 'text-amber-700',
-      border: isOverdue ? 'border-red-200' : 'border-amber-200',
-      label: isOverdue ? '已逾期' : '已借出'
-    },
-    MISSING: { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200', label: '丢失' },
-    MAINTENANCE: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200', label: '维护中' },
+  if (status === 'AVAILABLE') {
+    return <span className="badge badge-success">可借</span>
   }
-  
-  const config = configs[status]
-  
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${config.bg} ${config.text} ${config.border}`}>
-      <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${status === 'AVAILABLE' ? 'bg-emerald-500' : status === 'BORROWED' ? (isOverdue ? 'bg-red-500' : 'bg-amber-500') : 'bg-gray-500'}`} />
-      {config.label}
-    </span>
-  )
+  if (status === 'BORROWED') {
+    return <span className={`badge ${isOverdue ? 'badge-error' : 'badge-warning'}`}>{isOverdue ? '已逾期' : '已借出'}</span>
+  }
+  return <span className="badge badge-neutral">{status === 'MISSING' ? '丢失' : '维护中'}</span>
 }
 
 function CategoryBadge({ category }: { category: string }) {
@@ -63,7 +50,7 @@ function CategoryBadge({ category }: { category: string }) {
   const labels: Record<string, string> = { TOOL: '工具', DEVICE: '设备', CONSUMABLE: '耗材' }
   
   return (
-    <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+    <span className="badge badge-ghost">
       <span className="mr-1">{icons[category] || '📎'}</span>
       {labels[category] || category}
     </span>
@@ -77,7 +64,6 @@ export default function ToolsGalleryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category>('ALL')
 
-  // Fetch tools from API
   useEffect(() => {
     async function fetchTools() {
       try {
@@ -95,30 +81,23 @@ export default function ToolsGalleryPage() {
     fetchTools()
   }, [])
 
-  // 过滤工具
   const filteredTools = useMemo(() => {
     return tools.filter((tool) => {
-      // 分类过滤
       if (selectedCategory !== 'ALL' && tool.category !== selectedCategory) {
         return false
       }
-      
-      // 搜索过滤
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchName = tool.name.toLowerCase().includes(query)
         const matchDesc = tool.description?.toLowerCase().includes(query)
         const matchLocation = tool.items.some(i => i.homeLocation.toLowerCase().includes(query))
         const matchRfid = tool.items.some(i => i.rfidTag.toLowerCase().includes(query))
-        
         return matchName || matchDesc || matchLocation || matchRfid
       }
-      
       return true
     })
   }, [tools, searchQuery, selectedCategory])
 
-  // 统计
   const stats = useMemo(() => {
     const totalTypes = filteredTools.length
     const totalItems = filteredTools.reduce((sum, t) => sum + t.items.length, 0)
@@ -128,12 +107,9 @@ export default function ToolsGalleryPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-base-100">
         <div className="flex h-screen items-center justify-center">
-          <div className="text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-            <p className="mt-4 text-gray-600">加载中...</p>
-          </div>
+          <span className="loading loading-spinner loading-lg text-accent"></span>
         </div>
       </main>
     )
@@ -141,18 +117,15 @@ export default function ToolsGalleryPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-base-100">
         <div className="flex h-screen items-center justify-center">
-          <div className="rounded-2xl bg-white p-8 text-center shadow">
-            <div className="text-4xl">⚠️</div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">加载失败</h3>
-            <p className="mt-2 text-gray-500">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              重试
-            </button>
+          <div className="card bg-base-200 shadow-xl">
+            <div className="card-body items-center text-center">
+              <div className="text-4xl">⚠️</div>
+              <h2 className="card-title text-error">加载失败</h2>
+              <p>{error}</p>
+              <button onClick={() => window.location.reload()} className="btn btn-accent btn-sm mt-4">重试</button>
+            </div>
           </div>
         </div>
       </main>
@@ -160,53 +133,39 @@ export default function ToolsGalleryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* 顶部搜索栏 - 固定 */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          {/* 标题栏 */}
-          <div className="mb-4 flex items-center justify-between">
+    <main className="min-h-screen bg-base-100">
+      {/* Header */}
+      <div className="bg-primary shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">工具库</h1>
-              <p className="text-sm text-gray-500">
-                共 {stats.totalTypes} 种工具 · {stats.totalItems} 个个体 · {stats.availableItems} 个可借
-              </p>
+              <h1 className="text-2xl font-bold text-accent">🔧 工具库</h1>
+              <p className="text-accent/70 text-sm mt-1">共 {stats.totalTypes} 种 · {stats.totalItems} 个 · {stats.availableItems} 可借</p>
             </div>
-            <Link
-              href="/tool-types"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              管理类型
-            </Link>
+            <div className="flex gap-2">
+              <Link href="/user/items" className="btn btn-accent btn-sm">我的物品</Link>
+              <Link href="/tool-types" className="btn btn-ghost btn-sm">管理类型</Link>
+            </div>
           </div>
 
-          {/* 搜索框 */}
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+          {/* Search */}
+          <div className="relative mt-4">
             <input
               type="text"
               placeholder="搜索工具名称、描述、位置或 RFID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full rounded-xl border-0 bg-gray-100 py-3 pl-10 pr-4 text-gray-900 placeholder:text-gray-500 focus:bg-white focus:ring-2 focus:ring-blue-500"
+              className="input input-bordered w-full bg-base-100"
             />
           </div>
 
-          {/* 分类筛选 */}
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {/* Category Filter */}
+          <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.key}
                 onClick={() => setSelectedCategory(cat.key)}
-                className={`flex-shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                  selectedCategory === cat.key
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                }`}
+                className={`btn btn-sm ${selectedCategory === cat.key ? 'btn-accent' : 'btn-ghost'}`}
               >
                 <span className="mr-1">{cat.icon}</span>
                 {cat.label}
@@ -216,21 +175,23 @@ export default function ToolsGalleryPage() {
         </div>
       </div>
 
-      {/* 工具 Gallery */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* Gallery */}
+      <div className="container mx-auto px-4 py-8">
         {filteredTools.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-20 text-center">
-            <div className="text-6xl">🔍</div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">{tools.length === 0 ? '暂无工具数据' : '未找到匹配的工具'}</h3>
-            <p className="mt-1 text-gray-500">{tools.length === 0 ? '请先添加工具类型和工具' : '尝试调整搜索词或筛选条件'}</p>
-            {tools.length > 0 && (
-              <button
-                onClick={() => { setSearchQuery(''); setSelectedCategory('ALL') }}
-                className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                清除筛选
-              </button>
-            )}
+          <div className="card bg-base-200">
+            <div className="card-body items-center text-center py-20">
+              <div className="text-6xl">🔍</div>
+              <h3 className="text-xl font-bold mt-4">{tools.length === 0 ? '暂无工具数据' : '未找到匹配的工具'}</h3>
+              <p className="text-base-content/60 mt-2">{tools.length === 0 ? '请先添加工具类型和工具' : '尝试调整搜索词或筛选条件'}</p>
+              {tools.length > 0 && (
+                <button
+                  onClick={() => { setSearchQuery(''); setSelectedCategory('ALL') }}
+                  className="btn btn-accent btn-sm mt-4"
+                >
+                  清除筛选
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -238,16 +199,14 @@ export default function ToolsGalleryPage() {
               const availableCount = tool.items.filter(i => i.status === 'AVAILABLE').length
               
               return (
-                <div key={tool.id} className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
-                  {/* 工具类型头部 */}
-                  <div className="p-6">
+                <div key={tool.id} className="card bg-base-100 shadow-md border border-base-300">
+                  <div className="card-body">
                     <div className="flex items-start gap-5">
-                      {/* 图片区域 */}
-                      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-base-200">
                         {tool.imageUrl ? (
                           <img src={tool.imageUrl} alt={tool.name} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-4xl bg-gradient-to-br from-gray-100 to-gray-200">
+                          <div className="flex h-full w-full items-center justify-center text-4xl">
                             {tool.category === 'TOOL' && '🔧'}
                             {tool.category === 'DEVICE' && '🔌'}
                             {tool.category === 'CONSUMABLE' && '📦'}
@@ -255,58 +214,45 @@ export default function ToolsGalleryPage() {
                         )}
                       </div>
 
-                      {/* 工具信息 */}
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-bold text-gray-900">{tool.name}</h2>
+                          <h2 className="card-title text-xl">{tool.name}</h2>
                           <CategoryBadge category={tool.category} />
-                          <span className="text-sm text-gray-500">
-                            最长借用 {tool.maxBorrowDuration}
-                          </span>
                         </div>
                         
-                        <p className="mt-1 text-gray-600 line-clamp-2">{tool.description || '暂无描述'}</p>
+                        <p className="text-base-content/70 mt-1 line-clamp-2">{tool.description || '暂无描述'}</p>
                         
-                        {/* 统计徽章 */}
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                            {availableCount} 可借
-                          </span>
-                          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
-                            共 {tool.items.length} 个
-                          </span>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <span className="badge badge-success">{availableCount} 可借</span>
+                          <span className="badge badge-ghost">共 {tool.items.length} 个</span>
+                          <span className="badge badge-ghost">最长借用 {tool.maxBorrowDuration}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* 个体列表 */}
-                  <div className="border-t border-gray-100 bg-gray-50/50 px-6 py-4">
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <div className="bg-base-200 px-6 py-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-base-content/60 mb-3">
                       个体清单 · 存放于 {tool.items[0]?.homeLocation || 'N/A'}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {tool.items.map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative flex items-center gap-2 rounded-lg border px-3 py-2 transition-all ${
-                            item.status === 'AVAILABLE'
-                              ? 'border-emerald-200 bg-white hover:border-emerald-300 hover:shadow-sm'
-                              : item.status === 'BORROWED'
-                              ? 'border-amber-200 bg-amber-50/50'
-                              : 'border-gray-200 bg-gray-50'
+                          className={`group relative flex items-center gap-2 rounded-lg border px-3 py-2 bg-base-100 ${
+                            item.status === 'AVAILABLE' ? 'border-success/30' : 
+                            item.status === 'BORROWED' ? 'border-warning/30' : 'border-base-300'
                           }`}
                         >
                           <StatusBadge status={item.status} dueAt={item.dueAt} />
-                          <span className="font-mono text-xs text-gray-500">{item.rfidTag}</span>
+                          <span className="font-mono text-xs text-base-content/50">{item.rfidTag}</span>
                           
-                          {/* 悬停提示 */}
                           {item.status === 'BORROWED' && item.holderName && (
-                            <div className="absolute bottom-full left-0 mb-2 hidden w-max max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block z-10">
+                            <div className="absolute bottom-full left-0 mb-2 hidden w-max max-w-xs rounded-lg bg-accent px-3 py-2 text-xs text-accent-content shadow-lg group-hover:block z-10">
                               <div>借用人: {item.holderName}</div>
                               <div>邮箱: {item.holderEmail}</div>
                               <div>应还: {item.dueAt ? new Date(item.dueAt).toLocaleDateString('zh-CN') : '-'}</div>
-                              <div className="absolute -bottom-1 left-4 h-2 w-2 rotate-45 bg-gray-900" />
+                              <div className="absolute -bottom-1 left-4 h-2 w-2 rotate-45 bg-accent" />
                             </div>
                           )}
                         </div>
