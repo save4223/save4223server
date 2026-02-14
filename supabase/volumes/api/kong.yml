@@ -32,26 +32,6 @@ services:
     plugins:
       - name: cors
 
-  - name: auth-v1-open-saml
-    url: http://auth:9999/saml
-    routes:
-      - name: auth-v1-open-saml
-        strip_path: true
-        paths:
-          - /auth/v1/saml
-    plugins:
-      - name: cors
-
-  - name: auth-v1-open-sso
-    url: http://auth:9999/sso
-    routes:
-      - name: auth-v1-open-sso
-        strip_path: true
-        paths:
-          - /auth/v1/sso
-    plugins:
-      - name: cors
-
   - name: auth-v1
     _comment: 'GoTrue: /auth/v1/* -> http://auth:9999/*'
     url: http://auth:9999/
@@ -62,15 +42,6 @@ services:
           - /auth/v1/
     plugins:
       - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: false
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - anon
-            - authenticated
 
   - name: rest-v1
     _comment: 'PostgREST: /rest/v1/* -> http://rest:3000/*'
@@ -82,15 +53,6 @@ services:
           - /rest/v1/
     plugins:
       - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: true
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - anon
-            - authenticated
 
   - name: realtime-v1
     _comment: 'Realtime: /realtime/v1/* -> ws://realtime:4000/socket/*'
@@ -103,15 +65,6 @@ services:
           - /realtime/v1/
     plugins:
       - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: false
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - anon
-            - authenticated
 
   - name: storage-v1
     _comment: 'Storage: /storage/v1/* -> http://storage:5000/*'
@@ -123,15 +76,6 @@ services:
           - /storage/v1/
     plugins:
       - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: true
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - anon
-            - authenticated
 
   - name: functions-v1
     _comment: 'Edge Functions: /functions/v1/* -> http://functions:9000/*'
@@ -143,15 +87,6 @@ services:
           - /functions/v1/
     plugins:
       - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: false
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - anon
-            - authenticated
 
   - name: pg-meta
     _comment: 'PG Meta: /pg/* -> http://meta:8080/*'
@@ -162,20 +97,11 @@ services:
         paths:
           - /pg/
 
-consumers:
-  - username: anon
-    keyauth_credentials:
-      - key: ${ANON_KEY}
-    acls:
-      - group: anon
-  - username: authenticated
-    keyauth_credentials:
-      - key: ${ANON_KEY}
-    acls:
-      - group: authenticated
-      - group: anon
-  - username: service_role
-    keyauth_credentials:
-      - key: ${SERVICE_ROLE_KEY}
-    acls:
-      - group: service_role
+  - name: studio
+    _comment: 'Studio: / -> http://studio:3000'
+    url: http://studio:3000/
+    routes:
+      - name: studio-all
+        strip_path: false
+        paths:
+          - /studio
