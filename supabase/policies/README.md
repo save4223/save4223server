@@ -6,7 +6,16 @@ Row Level Security (RLS) policies for Save4223 Smart Inventory System.
 
 | 文件 | 说明 |
 |------|------|
-| `01_rls_policies.sql` | 完整的 RLS 策略定义 |
+| `../migrations/0001_rls_policies.sql` | **主要文件** - 通过 `supabase db reset` 自动应用 |
+| `01_rls_policies.sql` | 备份/参考文件 |
+
+## ⚠️ 重要: PostgreSQL 不支持 `CREATE POLICY IF NOT EXISTS`
+
+使用以下模式:
+```sql
+DROP POLICY IF EXISTS "policy_name" ON table_name;
+CREATE POLICY "policy_name" ON table_name ...;
+```
 
 ## 表权限矩阵
 
@@ -23,34 +32,25 @@ Row Level Security (RLS) policies for Save4223 Smart Inventory System.
 
 ## 部署方式
 
-### 方式 1: Supabase Studio (推荐)
+### 方式 1: Supabase CLI (推荐)
+
+```bash
+# 会自动执行 migrations 目录下的所有文件
+supabase db reset
+```
+
+### 方式 2: Supabase Studio
 
 1. 打开 http://127.0.0.1:54323 (本地) 或 https://supabase.com/dashboard
 2. 进入 SQL Editor
 3. 新建 Query
-4. 复制 `01_rls_policies.sql` 全部内容
+4. 复制 `supabase/migrations/0001_rls_policies.sql` 全部内容
 5. 点击 **Run**
 
-### 方式 2: Supabase CLI
+### 方式 3: psql
 
 ```bash
-# 执行 SQL 文件
-psql -h localhost -p 54322 -U postgres -d postgres -f supabase/policies/01_rls_policies.sql
-
-# 或者用 supabase 命令 (如果支持)
-supabase db reset  # 会重置数据库并重新运行 migrations
-```
-
-### 方式 3: 编程方式
-
-```typescript
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(url, service_role_key)
-
-// 读取并执行 SQL
-const sql = fs.readFileSync('supabase/policies/01_rls_policies.sql', 'utf8')
-const { error } = await supabase.rpc('exec_sql', { sql })
+psql -h localhost -p 54322 -U postgres -d postgres -f supabase/migrations/0001_rls_policies.sql
 ```
 
 ## 角色说明
