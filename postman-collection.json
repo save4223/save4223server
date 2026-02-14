@@ -1,0 +1,298 @@
+{
+  "info": {
+    "_postman_id": "save4223-edge-api-collection",
+    "name": "Save4223 Edge API",
+    "description": "Smart Lab Inventory System - Edge Device API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authorize Card (Open Cabinet)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_uid\": \"TEST123\",\n  \"cabinet_id\": 1\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/authorize",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "authorize"]
+        },
+        "description": "Check if user can open cabinet. Returns session_id if authorized."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Authorize Card (Restricted - Should Succeed)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_uid\": \"TEST123\",\n  \"cabinet_id\": 2\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/authorize",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "authorize"]
+        },
+        "description": "Test restricted cabinet with valid permission."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Authorize Card (Unknown Card)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_uid\": \"UNKNOWN999\",\n  \"cabinet_id\": 1\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/authorize",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "authorize"]
+        },
+        "description": "Test with unregistered card - should return 403."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Sync Session (Borrow Item)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"session_id\": \"{{$guid}}\",\n  \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"cabinet_id\": 1,\n  \"start_rfids\": [\"RFID-OSC-001\", \"RFID-TOOL-001\"],\n  \"end_rfids\": [\"RFID-TOOL-001\"],\n  \"evidence_image\": null\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/sync-session",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "sync-session"]
+        },
+        "description": "Simulate borrowing RFID-OSC-001. Item should change status to BORROWED."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Sync Session (Return Item)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"session_id\": \"{{$guid}}\",\n  \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"cabinet_id\": 1,\n  \"start_rfids\": [\"RFID-TOOL-001\"],\n  \"end_rfids\": [\"RFID-TOOL-001\", \"RFID-OSC-001\"],\n  \"evidence_image\": null\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/sync-session",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "sync-session"]
+        },
+        "description": "Simulate returning RFID-OSC-001. Item should change status to AVAILABLE."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Sync Session (No Changes)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"session_id\": \"{{$guid}}\",\n  \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"cabinet_id\": 1,\n  \"start_rfids\": [\"RFID-TOOL-001\"],\n  \"end_rfids\": [\"RFID-TOOL-001\"],\n  \"evidence_image\": null\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/sync-session",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "sync-session"]
+        },
+        "description": "No items taken or returned - should return empty transactions."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Local Sync (All Users)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/local-sync",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "local-sync"]
+        },
+        "description": "Get all users and permissions for Pi offline cache."
+      },
+      "response": []
+    },
+    {
+      "name": "8. Local Sync (Specific Cabinet)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer edge_device_secret_key"
+          }
+        ],
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/local-sync?cabinet_id=2",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "local-sync"],
+          "query": [
+            {
+              "key": "cabinet_id",
+              "value": "2"
+            }
+          ]
+        },
+        "description": "Get users authorized for Cabinet 2 only."
+      },
+      "response": []
+    },
+    {
+      "name": "9. Unauthorized (Missing Token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_uid\": \"TEST123\",\n  \"cabinet_id\": 1\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/authorize",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "authorize"]
+        },
+        "description": "Test without API token - should return 401."
+      },
+      "response": []
+    },
+    {
+      "name": "10. Unauthorized (Wrong Token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer wrong_token"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_uid\": \"TEST123\",\n  \"cabinet_id\": 1\n}"
+        },
+        "url": {
+          "raw": "http://100.83.123.68:3000/api/edge/authorize",
+          "protocol": "http",
+          "host": ["100", "83", "123", "68"],
+          "port": "3000",
+          "path": ["api", "edge", "authorize"]
+        },
+        "description": "Test with invalid API token - should return 401."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://100.83.123.68:3000",
+      "type": "string"
+    },
+    {
+      "key": "edge_api_secret",
+      "value": "edge_device_secret_key",
+      "type": "string"
+    }
+  ]
+}
