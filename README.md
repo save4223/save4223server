@@ -1,6 +1,6 @@
 # Save4223 Server
 
-Next.js + Supabase + Drizzle ORM fullstack application with local Supabase deployment.
+Next.js + Supabase + Drizzle ORM fullstack application.
 
 ## 🚀 Features
 
@@ -10,67 +10,57 @@ Next.js + Supabase + Drizzle ORM fullstack application with local Supabase deplo
 - 📊 **Drizzle ORM** - Type-safe SQL-like ORM
 - 📡 **Realtime** - Live data synchronization
 - 🔧 **Edge Functions** - Serverless functions
-- 🐳 **Docker** - Full containerization
 - 🎨 **Prettier** - Code formatting
 
 ## 📋 Prerequisites
 
 - Node.js 20+
-- Docker & Docker Compose
 - npm
+- [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)
 
 ## 🛠️ Setup
 
-### 1. Clone and Install
+### 1. Install Dependencies
 
 ```bash
-git clone https://github.com/save4223/save4223server.git
-cd save4223server
 npm install
 ```
 
-### 2. Environment Variables
+### 2. Start Supabase (Local)
 
 ```bash
-# Copy example env file
-cp .env.example .env
+# Using npx (recommended)
+npx supabase start
 
-# Edit .env with your values
-# Generate keys at: https://supabase.com/docs/guides/self-hosting/docker#generate-api-keys
+# Or if you have Supabase CLI installed globally
+supabase start
 ```
 
-### 3. Start Supabase Locally
+This will start all Supabase services:
+- 🗄️ **PostgreSQL**: localhost:54322
+- 🔌 **REST API**: http://localhost:54321/rest/v1
+- 🔐 **Auth**: http://localhost:54321/auth/v1
+- 🔧 **Studio**: http://localhost:54323
+- 📧 **Mailpit** (email testing): http://localhost:54324
 
-```bash
-# Pull and start all services
-npm run docker:up
+### 3. Environment Variables
 
-# Check status
-docker-compose ps
+The `.env.local` file is already configured for local development. It was auto-generated when starting Supabase.
+
+Key variables:
+```
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
 ```
 
-Services will be available at:
-
-- 🌐 **App**: http://localhost:3000
-- 🔧 **Supabase Studio**: http://localhost:54323
-- 🔌 **Supabase API**: http://localhost:8000
-- 🗄️ **PostgreSQL**: localhost:5432
-
-### 4. Run Database Migrations
-
-```bash
-# Generate migration files
-npm run db:generate
-
-# Apply migrations to database
-npm run db:migrate
-```
-
-### 5. Run Next.js Development
+### 4. Run Next.js Development
 
 ```bash
 npm run dev
 ```
+
+Visit: http://localhost:3000
 
 ## 📁 Project Structure
 
@@ -81,7 +71,7 @@ save4223server/
 │   │   ├── login/             # Login page
 │   │   ├── auth/callback/     # Auth callback handler
 │   │   └── page.tsx           # Home page
-│   ├── db/                    # Drizzle ORM
+│   ├── db/                     # Drizzle ORM
 │   │   ├── schema.ts          # Database schema
 │   │   ├── index.ts           # Database client
 │   │   └── migrations/        # Migration files
@@ -90,11 +80,12 @@ save4223server/
 │   │       ├── client.ts      # Browser client
 │   │       └── server.ts      # Server client
 │   └── middleware.ts          # Auth middleware
-├── supabase/                  # Supabase config
+├── supabase/                   # Supabase config
+│   ├── config.toml            # CLI configuration
+│   └── functions/             # Edge functions
 ├── drizzle.config.ts          # Drizzle configuration
-├── Dockerfile                 # Next.js container
-├── docker-compose.yml         # Full stack services
-└── .env.example               # Environment template
+├── .env.local                 # Local environment (auto-generated)
+└── README.md                  # This file
 ```
 
 ## 🔐 Authentication
@@ -110,7 +101,7 @@ The app includes a complete auth system:
 
 1. User visits `/login`
 2. Sign up with email/password
-3. Check email for confirmation link
+3. Check email for confirmation link (in Mailpit at http://localhost:54324)
 4. Click link → redirected to home
 5. Session managed automatically
 
@@ -135,7 +126,7 @@ export const users = pgTable('users', {
 
 ```typescript
 import { db } from '@/db'
-import { users, todos } from '@/db/schema'
+import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
 // Insert
@@ -146,27 +137,18 @@ const allUsers = await db.select().from(users)
 
 // Select with filter
 const user = await db.select().from(users).where(eq(users.email, 'user@example.com'))
-
-// Join
-const userTodos = await db
-  .select({
-    user: users,
-    todo: todos,
-  })
-  .from(users)
-  .innerJoin(todos, eq(users.id, todos.userId))
 ```
 
-### Access PostgreSQL Directly
+### Migrations
 
 ```bash
-# Connect to database
-docker-compose exec db psql -U supabase_admin -d postgres
+# Generate migration
+npm run db:generate
 
-# Or use Supabase Studio
-open http://localhost:54323
+# Apply migration
+npm run db:migrate
 
-# Or use Drizzle Studio
+# Open Drizzle Studio
 npm run db:studio
 ```
 
@@ -197,49 +179,41 @@ npm run db:push          # Push schema changes (dev only)
 npm run db:studio        # Open Drizzle Studio GUI
 ```
 
-### Docker
+### Supabase CLI
 
 ```bash
-npm run docker:up        # Start all services
-npm run docker:down      # Stop all services
-npm run docker:logs      # View logs
+# Start Supabase services
+npx supabase start
+
+# Stop Supabase services
+npx supabase stop
+
+# View Supabase status
+npx supabase status
+
+# View logs
+npx supabase logs
+
+# Reset database (⚠️ destructive)
+npx supabase db reset
 ```
 
-## 🌐 Environment Variables
+## 🌐 Supabase Services (Local)
 
-| Variable                        | Description        | Default               |
-| ------------------------------- | ------------------ | --------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase API URL   | http://localhost:8000 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anonymous API key  | -                     |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Service role key   | -                     |
-| `POSTGRES_HOST`                 | PostgreSQL host    | localhost             |
-| `POSTGRES_PORT`                 | PostgreSQL port    | 5432                  |
-| `POSTGRES_DB`                   | Database name      | postgres              |
-| `POSTGRES_USER`                 | Database user      | supabase_admin        |
-| `POSTGRES_PASSWORD`             | Database password  | -                     |
-| `JWT_SECRET`                    | JWT signing secret | -                     |
-
-## 🐳 Docker Services
-
-| Service        | Description           | Port       |
-| -------------- | --------------------- | ---------- |
-| app            | Next.js application   | 3000       |
-| db             | PostgreSQL database   | 5432       |
-| kong           | API Gateway           | 8000, 8443 |
-| auth           | GoTrue authentication | -          |
-| realtime       | WebSocket server      | -          |
-| storage        | File storage          | -          |
-| rest           | PostgREST API         | -          |
-| studio         | Supabase Dashboard    | 54323      |
-| edge-functions | Deno edge runtime     | -          |
+| Service | URL | Port |
+|---------|-----|------|
+| Next.js App | http://localhost:3000 | 3000 |
+| Supabase Studio | http://localhost:54323 | 54323 |
+| Supabase REST API | http://localhost:54321/rest/v1 | 54321 |
+| PostgreSQL | postgresql://postgres:postgres@localhost:54322/postgres | 54322 |
+| Mailpit (Emails) | http://localhost:54324 | 54324 |
 
 ## 📚 Learn More
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Supabase Documentation](https://supabase.com/docs)
-- [Supabase Self-Hosting](https://supabase.com/docs/guides/self-hosting/docker)
+- [Supabase Local Development](https://supabase.com/docs/guides/local-development/overview)
 - [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview)
-- [Drizzle Kit Documentation](https://orm.drizzle.team/docs/kit-overview)
 
 ## 📝 License
 
