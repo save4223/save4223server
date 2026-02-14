@@ -9,6 +9,11 @@ export async function GET() {
     // 获取所有工具类型
     const types = await db.select().from(itemTypes)
     
+    // 如果没有工具类型，返回空数组
+    if (types.length === 0) {
+      return NextResponse.json([])
+    }
+    
     // 获取所有物品，关联位置和借用人信息
     const allItems = await db
       .select({
@@ -48,6 +53,13 @@ export async function GET() {
     return NextResponse.json(result)
   } catch (error) {
     console.error('Failed to fetch tools:', error)
+    // 如果表不存在，返回空数组而不是报错
+    if (error instanceof Error && 
+        (error.message.includes('does not exist') || 
+         error.message.includes('relation') ||
+         error.message.includes('Failed query'))) {
+      return NextResponse.json([])
+    }
     return NextResponse.json(
       { error: 'Failed to fetch tools' },
       { status: 500 }
