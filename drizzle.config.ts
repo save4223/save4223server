@@ -5,10 +5,11 @@ export default defineConfig({
   out: './src/db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: Number(process.env.POSTGRES_PORT) || 5432,
-    user: process.env.POSTGRES_USER || 'supabase_admin',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-    database: process.env.POSTGRES_DB || 'postgres',
+    host: '127.0.0.1',
+    port: 54322,
+    user: 'postgres',
+    password: 'postgres',
+    database: 'postgres',
+    ssl: false,
   },
 })
