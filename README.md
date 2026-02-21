@@ -177,6 +177,12 @@ npm run db:generate      # Generate migration files
 npm run db:migrate       # Apply migrations to database
 npm run db:push          # Push schema changes (dev only)
 npm run db:studio        # Open Drizzle Studio GUI
+npm run db:seed          # Seed database with mock data and RLS policies
+```
+
+Or manually with psql:
+```bash
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/seed.sql
 ```
 
 ### Supabase CLI
@@ -218,3 +224,32 @@ npx supabase db reset
 ## 📝 License
 
 MIT
+
+## 🔄 Recent Changes
+
+### 2026-02-21 - Image Upload & Storage Fixes
+
+- **Fixed storage bucket creation**: Added `createServiceRoleClient()` in `src/utils/minio/client.ts` to bypass RLS when creating buckets
+- **Added RLS policies for storage**: Authenticated users can now upload/view images to the `tool-images` bucket
+- **Updated file size limit**: Changed from 5MB to 20MB for image uploads
+- **Fixed error handling**: `ensureBucket()` now properly throws errors instead of silently failing
+- **Seed database**: Added `supabase/seed.sql` with bucket setup and storage policies
+
+### Setup Requirements
+
+After starting Supabase for the first time, run the seed file:
+
+```bash
+npm run db:seed
+```
+
+Or manually:
+
+```bash
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/seed.sql
+```
+
+This creates:
+- The `tool-images` storage bucket (20MB limit, public access)
+- RLS policies allowing authenticated users to upload/view images
+- Mock data (admin/user accounts, locations, item types, items)

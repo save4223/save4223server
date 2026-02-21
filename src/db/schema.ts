@@ -21,7 +21,8 @@ export const profiles = pgTable('profiles', {
 })
 
 // Locations - Physical storage units
-export const locations = pgTable('locations', {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const locations: any = pgTable('locations', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   type: locationTypeEnum('type').notNull(),

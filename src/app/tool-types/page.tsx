@@ -63,6 +63,9 @@ export default async function ToolTypesPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  图片
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   类型名称
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -86,13 +89,21 @@ export default async function ToolTypesPage() {
               {types.map(({ type, total, available }) => (
                 <tr key={type.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-6 py-4">
+                    <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {type.imageUrl ? (
+                        <img src={type.imageUrl} alt={type.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-xl">
+                          {type.category === 'TOOL' && '🔧'}
+                          {type.category === 'DEVICE' && '🔌'}
+                          {type.category === 'CONSUMABLE' && '📦'}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-xl">
-                        {type.category === 'TOOL' && '🔧'}
-                        {type.category === 'DEVICE' && '🔌'}
-                        {type.category === 'CONSUMABLE' && '📦'}
-                      </div>
-                      <div className="ml-4">
+                      <div>
                         <div className="text-sm font-medium text-gray-900">{type.name}</div>
                         <div className="text-sm text-gray-500 line-clamp-1 max-w-xs">
                           {type.description || '暂无描述'}

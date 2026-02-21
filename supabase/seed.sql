@@ -184,7 +184,47 @@ BEGIN
 END $$;
 
 -- ============================================
--- 3. Auth Trigger - Auto-create profile on signup
+-- 3. Storage Bucket Setup
+-- ============================================
+
+-- Create the tool-images storage bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'tool-images',
+    'tool-images',
+    true,
+    20971520,  -- 20MB in bytes
+    ARRAY['image/png', 'image/jpeg', 'image/gif', 'image/webp']::text[]
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage RLS policies - allow authenticated users to upload/view images
+DO $$
+BEGIN
+    -- Allow authenticated users to select (view) any object
+    DROP POLICY IF EXISTS "Allow authenticated users to view images" ON storage.objects;
+    CREATE POLICY "Allow authenticated users to view images"
+        ON storage.objects FOR SELECT
+        TO authenticated
+        USING (bucket_id = 'tool-images');
+
+    -- Allow authenticated users to insert (upload) objects
+    DROP POLICY IF EXISTS "Allow authenticated users to upload images" ON storage.objects;
+    CREATE POLICY "Allow authenticated users to upload images"
+        ON storage.objects FOR INSERT
+        TO authenticated
+        WITH CHECK (bucket_id = 'tool-images');
+
+    -- Allow authenticated users to delete their own objects (optional)
+    DROP POLICY IF EXISTS "Allow authenticated users to delete images" ON storage.objects;
+    CREATE POLICY "Allow authenticated users to delete images"
+        ON storage.objects FOR DELETE
+        TO authenticated
+        USING (bucket_id = 'tool-images');
+END $$;
+
+-- ============================================
+-- 4. Auth Trigger - Auto-create profile on signup
 -- ============================================
 
 -- Function to create profile when new user is created
