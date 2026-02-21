@@ -23,7 +23,9 @@
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
+    "@types/minio": "^7.1.0",
     "drizzle-orm": "^0.45.1",
+    "minio": "^8.0.6",
     "next": "16.1.6",
     "pg": "^8.18.0",
     "react": "19.2.3",
