@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     const sessionId = uuidv4()
 
     // Get user profile for name
-    const { data: userData, error: userError } = await db.query.profiles.findFirst({
+    const userData = await db.query.profiles.findFirst({
       where: (profiles, { eq }) => eq(profiles.id, card.userId),
     })
 
