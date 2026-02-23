@@ -17,6 +17,17 @@ interface BorrowedItem {
   rfidTag: string
 }
 
+interface OrphanedUser {
+  id: string
+  email: string
+  fullName: string | null
+}
+
+interface OrphanedItem {
+  id: string
+  rfidTag: string
+}
+
 function RoleBadge({ role }: { role: string }) {
   const configs = {
     ADMIN: { class: 'badge-error', icon: '👑' },
@@ -89,6 +100,11 @@ export default function AdminUsersPage() {
   const [borrowedItems, setBorrowedItems] = useState<BorrowedItem[]>([])
   const [checkingItems, setCheckingItems] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Cleanup orphaned users
+  const [showCleanupModal, setShowCleanupModal] = useState(false)
+  const [cleanupPreview, setCleanupPreview] = useState<{ orphanedCount: number; orphanedUsers: OrphanedUser[]; borrowedItemsCount: number; borrowedItems: OrphanedItem[] } | null>(null)
+  const [cleaningUp, setCleaningUp] = useState(false)
 
   useEffect(() => {
     fetchUsers()
@@ -195,6 +211,37 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function previewCleanup() {
+    try {
+      const res = await fetch('/api/admin/cleanup-orphaned-users')
+      if (!res.ok) throw new Error('Failed to preview cleanup')
+      const data = await res.json()
+      setCleanupPreview(data)
+      setShowCleanupModal(true)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to preview cleanup')
+    }
+  }
+
+  async function executeCleanup() {
+    setCleaningUp(true)
+    try {
+      const res = await fetch('/api/admin/cleanup-orphaned-users', {
+        method: 'POST',
+      })
+      if (!res.ok) throw new Error('Failed to cleanup')
+      const data = await res.json()
+      alert(data.message)
+      setShowCleanupModal(false)
+      setCleanupPreview(null)
+      fetchUsers() // Refresh list
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to cleanup')
+    } finally {
+      setCleaningUp(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -218,18 +265,30 @@ export default function AdminUsersPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-        <Link href="/admin" className="btn btn-ghost btn-sm w-fit">
-          ← Back to Admin
-        </Link>
-        <div className="flex-1 flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-bold">👥 User Management</h2>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <Link href="/admin" className="btn btn-ghost btn-sm w-fit">
+            ← Back to Admin
+          </Link>
+          <div className="flex-1 flex items-center justify-between">
+            <h2 className="text-xl sm:text-2xl font-bold">👥 User Management</h2>
+            <button 
+              onClick={() => setShowInviteModal(true)}
+              className="btn btn-accent btn-sm sm:btn-md"
+            >
+              <span className="hidden sm:inline">+ Invite User</span>
+              <span className="sm:hidden">+ Invite</span>
+            </button>
+          </div>
+        </div>
+        
+        {/* Cleanup button */}
+        <div className="flex justify-end">
           <button 
-            onClick={() => setShowInviteModal(true)}
-            className="btn btn-accent btn-sm sm:btn-md"
+            onClick={previewCleanup}
+            className="btn btn-warning btn-sm"
           >
-            <span className="hidden sm:inline">+ Invite User</span>
-            <span className="sm:hidden">+ Invite</span>
+            🧹 Cleanup Orphaned Users
           </button>
         </div>
       </div>
@@ -461,6 +520,93 @@ export default function AdminUsersPage() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cleanup Orphaned Users Modal */}
+      {showCleanupModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="card bg-base-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="card-body">
+              <h3 className="card-title text-warning mb-4">🧹 Cleanup Orphaned Users</h3>
+              
+              {!cleanupPreview ? (
+                <div className="flex items-center justify-center py-8">
+                  <span className="loading loading-spinner loading-lg text-accent"></span>
+                </div>
+              ) : cleanupPreview.orphanedCount === 0 ? (
+                <div className="alert alert-success">
+                  <span>✅ No orphaned users found. All profiles have valid auth users.</span>
+                </div>
+              ) : (
+                <>
+                  <div className="alert alert-warning mb-4">
+                    <div>
+                      <p className="font-semibold">Found {cleanupPreview.orphanedCount} orphaned user(s)</p>
+                      <p className="text-sm mt-1">
+                        These profiles exist in the database but have no corresponding auth user.
+                      </p>
+                      {cleanupPreview.borrowedItemsCount > 0 && (
+                        <p className="text-sm mt-2 font-semibold">
+                          ⚠️ {cleanupPreview.borrowedItemsCount} borrowed item(s) will be reset to AVAILABLE
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-base-200 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
+                    <h4 className="font-semibold text-sm mb-2">Orphaned Users:</h4>
+                    <ul className="space-y-2 text-sm">
+                      {cleanupPreview.orphanedUsers.map(user => (
+                        <li key={user.id} className="flex justify-between">
+                          <span>{user.fullName || user.email}</span>
+                          <span className="text-base-content/50 font-mono text-xs">{user.id.slice(-8)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {cleanupPreview.borrowedItems.length > 0 && (
+                    <div className="bg-base-200 rounded-lg p-4 mb-4 max-h-32 overflow-y-auto">
+                      <h4 className="font-semibold text-sm mb-2">Items to Reset:</h4>
+                      <ul className="space-y-1 text-sm font-mono">
+                        {cleanupPreview.borrowedItems.map(item => (
+                          <li key={item.id}>{item.rfidTag}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={executeCleanup}
+                      disabled={cleaningUp}
+                      className="btn btn-warning flex-1"
+                    >
+                      {cleaningUp ? (
+                        <>
+                          <span className="loading loading-spinner loading-sm"></span>
+                          Cleaning...
+                        </>
+                      ) : (
+                        'Execute Cleanup'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCleanupModal(false)
+                        setCleanupPreview(null)
+                      }}
+                      disabled={cleaningUp}
+                      className="btn btn-ghost"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
