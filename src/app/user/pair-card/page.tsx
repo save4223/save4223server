@@ -127,13 +127,13 @@ export default function PairCardPage() {
       <div className="bg-primary shadow-sm">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/user/profile" className="btn btn-ghost btn-sm">
-                ← Back to Profile
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <Link href="/user/profile" className="btn btn-ghost btn-sm w-fit">
+                ← Back
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-accent">💳 Pair NFC Card</h1>
-                <p className="text-accent/70 text-sm mt-1">Link your NFC card to your account</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-accent">💳 Pair NFC Card</h1>
+                <p className="text-accent/70 text-sm mt-1 hidden sm:block">Link your NFC card to your account</p>
               </div>
             </div>
           </div>

@@ -137,14 +137,19 @@ export default function ToolsGalleryPage() {
       {/* Header */}
       <div className="bg-primary shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-accent">🔧 Tool Library</h1>
-              <p className="text-accent/70 text-sm mt-1">{stats.totalTypes} types · {stats.totalItems} items · {stats.availableItems} available</p>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <Link href="/" className="btn btn-ghost btn-sm">
+                ← Back
+              </Link>
+              <div className="flex-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-accent">🔧 Tool Library</h1>
+                <p className="text-accent/70 text-sm mt-1 hidden sm:block">{stats.totalTypes} types · {stats.totalItems} items · {stats.availableItems} available</p>
+              </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 sm:justify-end">
               <Link href="/user/items" className="btn btn-accent btn-sm">My Items</Link>
-              <Link href="/tool-types" className="btn btn-ghost btn-sm">Manage Types</Link>
+              <Link href="/tool-types" className="btn btn-ghost btn-sm hidden sm:inline-flex">Manage Types</Link>
             </div>
           </div>
 
