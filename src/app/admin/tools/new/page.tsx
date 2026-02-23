@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
 import { db } from '@/db'
-import { itemTypes } from '@/db/schema'
+import { itemTypes, locations } from '@/db/schema'
 import { createClient } from '@/utils/supabase/server'
 import { sql, eq } from 'drizzle-orm'
-import AdminToolTypesClient from './AdminToolTypesClient'
+import NewToolClient from './NewToolClient'
 
-export default async function AdminToolTypesPage() {
+export default async function NewToolPage() {
   // Check admin access
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -20,8 +20,11 @@ export default async function AdminToolTypesPage() {
     redirect('/')
   }
 
-  // Get all tool types
-  const types = await db.select().from(itemTypes).orderBy(itemTypes.name)
+  // Get tool types and locations
+  const [toolTypes, allLocations] = await Promise.all([
+    db.select({ id: itemTypes.id, name: itemTypes.name }).from(itemTypes).orderBy(itemTypes.name),
+    db.select({ id: locations.id, name: locations.name }).from(locations).orderBy(locations.name),
+  ])
 
-  return <AdminToolTypesClient types={types} />
+  return <NewToolClient toolTypes={toolTypes} locations={allLocations} />
 }

@@ -10,7 +10,8 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/admin/tool-types', label: 'Tool Types', icon: '🔧' },
+  { href: '/admin/tool-types', label: 'Tool Types', icon: '📋' },
+  { href: '/admin/tools', label: 'Tools', icon: '🔧' },
 ]
 
 export default function AdminLayout({
@@ -51,7 +52,7 @@ export default function AdminLayout({
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={pathname === item.href ? 'active' : ''}
+                      className={pathname === item.href || pathname.startsWith(item.href + '/') ? 'active' : ''}
                     >
                       <span className="mr-2">{item.icon}</span>
                       {item.label}
