@@ -10,6 +10,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { href: '/admin/users', label: 'Users', icon: '👥' },
   { href: '/admin/tool-types', label: 'Tool Types', icon: '📋' },
   { href: '/admin/tools', label: 'Tools', icon: '🔧' },
 ]
