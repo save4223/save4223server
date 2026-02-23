@@ -10,7 +10,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/admin/tool-types', label: '工具类型', icon: '🔧' },
+  { href: '/admin/tool-types', label: 'Tool Types', icon: '🔧' },
 ]
 
 export default function AdminLayout({
@@ -28,13 +28,13 @@ export default function AdminLayout({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/" className="btn btn-accent btn-sm">
-                ← 返回首页
+                ← Back to Home
               </Link>
-              <h1 className="text-xl font-bold text-accent">⚙️ 管理后台</h1>
+              <h1 className="text-xl font-bold text-accent">⚙️ Admin Dashboard</h1>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/user/profile" className="btn btn-ghost btn-sm">
-                👤 个人资料
+                👤 Profile
               </Link>
             </div>
           </div>

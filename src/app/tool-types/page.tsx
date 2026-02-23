@@ -2,8 +2,20 @@ import Link from 'next/link'
 import { db } from '@/db'
 import { itemTypes, items } from '@/db/schema'
 import { eq, sql, count } from 'drizzle-orm'
+import { createClient } from '@/utils/supabase/server'
 
 export default async function ToolTypesPage() {
+  // Get current user to check admin status
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  // Check if user is admin
+  let isAdmin = false
+  if (user) {
+    const profile = await db.select({ role: sql`role` }).from(sql`profiles`).where(eq(sql`id`, user.id)).limit(1)
+    isAdmin = profile[0]?.role === 'ADMIN'
+  }
+
   // Get all tool types first
   const allTypes = await db.select().from(itemTypes)
   
@@ -19,8 +31,8 @@ export default async function ToolTypesPage() {
       
       return {
         type,
-        total: stats[0]?.total || 0,
-        available: stats[0]?.available || 0,
+        total: Number(stats[0]?.total || 0),
+        available: Number(stats[0]?.available || 0),
       }
     })
   )
@@ -48,6 +60,11 @@ export default async function ToolTypesPage() {
                 <p className="text-accent/70 text-sm mt-1">Manage tool categories and borrowing rules</p>
               </div>
             </div>
+            {isAdmin && (
+              <Link href="/admin/tool-types" className="btn btn-accent btn-sm">
+                ⚙️ Admin Dashboard
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -90,7 +107,7 @@ export default async function ToolTypesPage() {
                   <th className="text-left">Max Duration</th>
                   <th className="text-left">Total Items</th>
                   <th className="text-left">Available</th>
-                  <th className="text-left">Actions</th>
+                  {isAdmin && <th className="text-left">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -133,14 +150,16 @@ export default async function ToolTypesPage() {
                         {available}
                       </span>
                     </td>
-                    <td>
-                      <Link
-                        href={`/tools?type=${type.id}`}
-                        className="btn btn-accent btn-sm"
-                      >
-                        View Tools
-                      </Link>
-                    </td>
+                    {isAdmin && (
+                      <td>
+                        <Link
+                          href={`/admin/tool-types/${type.id}/edit`}
+                          className="btn btn-warning btn-sm"
+                        >
+                          ✏️ Edit
+                        </Link>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
