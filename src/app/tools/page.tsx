@@ -63,22 +63,32 @@ export default function ToolsGalleryPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category>('ALL')
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    async function fetchTools() {
+    async function fetchData() {
       try {
         setLoading(true)
-        const res = await fetch('/api/tools')
-        if (!res.ok) throw new Error('Failed to fetch tools')
-        const data = await res.json()
-        setTools(data)
+        
+        // Fetch tools
+        const toolsRes = await fetch('/api/tools')
+        if (!toolsRes.ok) throw new Error('Failed to fetch tools')
+        const toolsData = await toolsRes.json()
+        setTools(toolsData)
+        
+        // Fetch user profile to check admin status
+        const profileRes = await fetch('/api/user/profile')
+        if (profileRes.ok) {
+          const profile = await profileRes.json()
+          setIsAdmin(profile.role === 'ADMIN')
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)
       }
     }
-    fetchTools()
+    fetchData()
   }, [])
 
   const filteredTools = useMemo(() => {
@@ -244,15 +254,16 @@ export default function ToolsGalleryPage() {
                       {tool.items.map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative flex items-center gap-2 rounded-lg border px-3 py-2 bg-base-100 ${
+                          className={`flex items-center gap-2 rounded-lg border px-3 py-2 bg-base-100 ${
                             item.status === 'AVAILABLE' ? 'border-success/30' : 
                             item.status === 'BORROWED' ? 'border-warning/30' : 'border-base-300'
-                          }`}
+                          } ${isAdmin ? 'group relative' : ''}`}
                         >
                           <StatusBadge status={item.status} dueAt={item.dueAt} />
                           <span className="font-mono text-xs text-base-content/50">{item.rfidTag}</span>
                           
-                          {item.status === 'BORROWED' && item.holderName && (
+                          {/* Only show hover tooltip for admins */}
+                          {isAdmin && item.status === 'BORROWED' && item.holderName && (
                             <div className="absolute bottom-full left-0 mb-2 hidden w-max max-w-xs rounded-lg bg-accent px-3 py-2 text-xs text-accent-content shadow-lg group-hover:block z-10">
                               <div>Borrower: {item.holderName}</div>
                               <div>Email: {item.holderEmail}</div>

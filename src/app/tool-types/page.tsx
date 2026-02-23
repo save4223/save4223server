@@ -82,14 +82,14 @@ export default async function ToolTypesPage() {
           <div className="card bg-base-100 shadow-lg border border-base-300">
             <div className="card-body items-center text-center">
               <div className="text-4xl mb-4">✅</div>
-              <div className="text-3xl font-bold text-success">{totalAvailable}</div>
+              <div className="text-3xl font-bold text-accent">{totalAvailable}</div>
               <div className="mt-2 text-base-content/70">Available Tools</div>
             </div>
           </div>
           <div className="card bg-base-100 shadow-lg border border-base-300">
             <div className="card-body items-center text-center">
               <div className="text-4xl mb-4">📦</div>
-              <div className="text-3xl font-bold text-info">{totalItems}</div>
+              <div className="text-3xl font-bold text-accent">{totalItems}</div>
               <div className="mt-2 text-base-content/70">Total Tool Items</div>
             </div>
           </div>

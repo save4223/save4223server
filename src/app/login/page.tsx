@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -53,18 +54,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-base-100">
+      <div className="w-full max-w-md space-y-8 rounded-xl bg-base-100 p-8 shadow-lg border border-base-300">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome</h1>
-          <p className="mt-2 text-gray-600">Sign in to your account or create a new one</p>
+          <div className="text-4xl mb-4">🔧</div>
+          <h1 className="text-3xl font-bold text-accent">Smart Lab Inventory</h1>
+          <p className="mt-2 text-base-content/70">Sign in to your account or create a new one</p>
         </div>
 
         <form className="mt-8 space-y-6">
           <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+            <div className="form-control">
+              <label htmlFor="email" className="label">
+                <span className="label-text">Email address</span>
               </label>
               <input
                 id="email"
@@ -72,14 +74,14 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input input-bordered w-full"
                 placeholder="you@example.com"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+            <div className="form-control">
+              <label htmlFor="password" className="label">
+                <span className="label-text">Password</span>
               </label>
               <input
                 id="password"
@@ -87,7 +89,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input input-bordered w-full"
                 placeholder="••••••••"
               />
             </div>
@@ -95,9 +97,9 @@ export default function LoginPage() {
 
           {message && (
             <div
-              className={`rounded-lg p-4 text-sm ${message.includes('error') || message.includes('Error') || message.includes('Invalid') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}
+              className={`alert ${message.includes('error') || message.includes('Error') || message.includes('Invalid') ? 'alert-error' : 'alert-success'}`}
             >
-              {message}
+              <span>{message}</span>
             </div>
           )}
 
@@ -106,20 +108,26 @@ export default function LoginPage() {
               type="submit"
               onClick={handleSignIn}
               disabled={loading}
-              className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+              className="btn btn-accent flex-1"
             >
-              {loading ? 'Loading...' : 'Sign In'}
+              {loading ? <span className="loading loading-spinner"></span> : 'Sign In'}
             </button>
             <button
               type="button"
               onClick={handleSignUp}
               disabled={loading}
-              className="flex-1 rounded-lg bg-gray-200 px-4 py-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-300 disabled:opacity-50"
+              className="btn btn-outline flex-1"
             >
               Sign Up
             </button>
           </div>
         </form>
+
+        <div className="text-center mt-6">
+          <Link href="/" className="btn btn-ghost btn-sm">
+            ← Back to Home
+          </Link>
+        </div>
       </div>
     </div>
   )
