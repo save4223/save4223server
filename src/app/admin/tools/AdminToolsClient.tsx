@@ -78,21 +78,28 @@ export default function AdminToolsClient({ tools: initialTools, toolTypes }: Adm
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Manage Tools</h2>
-        <Link href="/admin/tools/new" className="btn btn-accent">
-          + Add New Tool
+      {/* Mobile-friendly header with back button */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+        <Link href="/admin" className="btn btn-ghost btn-sm w-fit">
+          ← Back to Admin
         </Link>
+        <div className="flex-1 flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-bold">Manage Tools</h2>
+          <Link href="/admin/tools/new" className="btn btn-accent btn-sm sm:btn-md">
+            <span className="hidden sm:inline">+ Add New Tool</span>
+            <span className="sm:hidden">+ New</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Filter */}
+      {/* Filter - full width on mobile */}
       <div className="mb-4">
         <input
           type="text"
           placeholder="Search by RFID, type, or location..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="input input-bordered w-full max-w-md"
+          className="input input-bordered w-full"
         />
       </div>
 
@@ -101,21 +108,21 @@ export default function AdminToolsClient({ tools: initialTools, toolTypes }: Adm
           <table className="table table-zebra">
             <thead className="bg-base-200">
               <tr>
-                <th>ID</th>
+                <th className="hidden sm:table-cell">ID</th>
                 <th>RFID Tag</th>
-                <th>Type</th>
+                <th className="hidden md:table-cell">Type</th>
                 <th>Status</th>
-                <th>Location</th>
-                <th>Current Holder</th>
-                <th className="w-24">Actions</th>
+                <th className="hidden lg:table-cell">Location</th>
+                <th className="hidden xl:table-cell">Holder</th>
+                <th className="w-20">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredTools.map((tool) => (
                 <tr key={tool.id}>
-                  <td className="font-mono text-xs">{tool.id.slice(-8)}...</td>
-                  <td className="font-mono">{tool.rfidTag}</td>
-                  <td>{tool.itemTypeName}</td>
+                  <td className="hidden sm:table-cell font-mono text-xs">{tool.id.slice(-8)}...</td>
+                  <td className="font-mono text-sm">{tool.rfidTag}</td>
+                  <td className="hidden md:table-cell">{tool.itemTypeName}</td>
                   <td>
                     <span className={`badge badge-sm ${
                       tool.status === 'AVAILABLE' ? 'badge-success' :
@@ -123,11 +130,11 @@ export default function AdminToolsClient({ tools: initialTools, toolTypes }: Adm
                       tool.status === 'MISSING' ? 'badge-error' :
                       'badge-ghost'
                     }`}>
-                      {tool.status}
+                      {tool.status.slice(0, 4)}
                     </span>
                   </td>
-                  <td>{tool.homeLocation}</td>
-                  <td>{tool.holderName || '-'}</td>
+                  <td className="hidden lg:table-cell">{tool.homeLocation}</td>
+                  <td className="hidden xl:table-cell">{tool.holderName || '-'}</td>
                   <td>
                     <div className="flex gap-1">
                       <Link 

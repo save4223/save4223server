@@ -62,7 +62,7 @@ export default async function Home() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="mb-12 hidden gap-6 sm:grid-cols-3 sm:grid">
           <Link
             href="/tools"
             className="card bg-base-100 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-base-300"

@@ -138,15 +138,20 @@ export default function UserItemsPage() {
     <main className="min-h-screen bg-base-100">
       {/* Header */}
       <div className="bg-primary shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-accent">📋 My Items</h1>
-              <p className="text-accent/70 text-sm mt-1">View borrowed items and transaction history</p>
-            </div>
-            <Link href="/tools" className="btn btn-accent btn-sm">
-              Browse Tools
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <Link href="/" className="btn btn-ghost btn-sm w-fit">
+              ← Back
             </Link>
+            <div className="flex-1 flex items-center justify-between">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-accent">📋 My Items</h1>
+                <p className="text-accent/70 text-sm mt-1 hidden sm:block">View borrowed items and transaction history</p>
+              </div>
+              <Link href="/tools" className="btn btn-accent btn-sm">
+                Browse Tools
+              </Link>
+            </div>
           </div>
         </div>
       </div>

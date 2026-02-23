@@ -68,11 +68,18 @@ export default function AdminToolTypesClient({ types: initialTypes }: AdminToolT
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Manage Tool Types</h2>
-        <Link href="/admin/tool-types/new" className="btn btn-accent">
-          + Create New Type
+      {/* Mobile-friendly header with back button */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+        <Link href="/admin" className="btn btn-ghost btn-sm w-fit">
+          ← Back to Admin
         </Link>
+        <div className="flex-1 flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-bold">Manage Tool Types</h2>
+          <Link href="/admin/tool-types/new" className="btn btn-accent btn-sm sm:btn-md">
+            <span className="hidden sm:inline">+ Create New Type</span>
+            <span className="sm:hidden">+ New</span>
+          </Link>
+        </div>
       </div>
 
       <div className="card bg-base-100 shadow-lg border border-base-300 overflow-hidden">
@@ -80,24 +87,24 @@ export default function AdminToolTypesClient({ types: initialTypes }: AdminToolT
           <table className="table table-zebra">
             <thead className="bg-base-200">
               <tr>
-                <th>ID</th>
+                <th className="hidden sm:table-cell">ID</th>
                 <th>Image</th>
                 <th>Name</th>
-                <th>Category</th>
-                <th>Max Duration</th>
+                <th className="hidden md:table-cell">Category</th>
+                <th className="hidden lg:table-cell">Max Duration</th>
                 <th className="w-48">Actions</th>
               </tr>
             </thead>
             <tbody>
               {types.map((type) => (
                 <tr key={type.id}>
-                  <td>{type.id}</td>
+                  <td className="hidden sm:table-cell">{type.id}</td>
                   <td>
-                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-base-200 flex items-center justify-center">
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg overflow-hidden bg-base-200 flex items-center justify-center">
                       {type.imageUrl ? (
                         <img src={type.imageUrl} alt={type.name} className="h-full w-full object-cover" />
                       ) : (
-                        <span className="text-xl">
+                        <span className="text-lg sm:text-xl">
                           {type.category === 'TOOL' && '🔧'}
                           {type.category === 'DEVICE' && '🔌'}
                           {type.category === 'CONSUMABLE' && '📦'}
@@ -106,15 +113,15 @@ export default function AdminToolTypesClient({ types: initialTypes }: AdminToolT
                     </div>
                   </td>
                   <td className="font-semibold">{type.name}</td>
-                  <td><span className="badge badge-ghost">{type.category}</span></td>
-                  <td>{type.maxBorrowDuration || '7 days'}</td>
+                  <td className="hidden md:table-cell"><span className="badge badge-ghost">{type.category}</span></td>
+                  <td className="hidden lg:table-cell">{type.maxBorrowDuration || '7 days'}</td>
                   <td>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Link 
                         href={`/admin/tool-types/${type.id}/edit`}
-                        className="btn btn-warning btn-sm"
+                        className="btn btn-warning btn-xs sm:btn-sm"
                       >
-                        ✏️ Edit
+                        ✏️ <span className="hidden sm:inline">Edit</span>
                       </Link>
                       <DeleteButton 
                         id={type.id} 
