@@ -12,6 +12,11 @@ interface User {
   createdAt: string
 }
 
+interface BorrowedItem {
+  id: string
+  rfidTag: string
+}
+
 function RoleBadge({ role }: { role: string }) {
   const configs = {
     ADMIN: { class: 'badge-error', icon: '👑' },
@@ -24,47 +29,6 @@ function RoleBadge({ role }: { role: string }) {
     <span className={`badge ${config.class} badge-sm`}>
       {config.icon} {role}
     </span>
-  )
-}
-
-function DeleteButton({ id, email, onDelete }: { id: string; email: string; onDelete: () => void }) {
-  const [deleting, setDeleting] = useState(false)
-
-  async function handleDelete() {
-    if (!confirm(`Are you sure you want to delete user "${email}"?\n\nThis action cannot be undone.`)) {
-      return
-    }
-
-    setDeleting(true)
-    try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Failed to delete')
-      }
-
-      onDelete()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete')
-      setDeleting(false)
-    }
-  }
-
-  return (
-    <button
-      onClick={handleDelete}
-      disabled={deleting}
-      className="btn btn-error btn-xs"
-    >
-      {deleting ? (
-        <span className="loading loading-spinner loading-xs"></span>
-      ) : (
-        '🗑️'
-      )}
-    </button>
   )
 }
 
@@ -118,6 +82,13 @@ export default function AdminUsersPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('USER')
   const [inviting, setInviting] = useState(false)
+  
+  // Delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const [borrowedItems, setBorrowedItems] = useState<BorrowedItem[]>([])
+  const [checkingItems, setCheckingItems] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchUsers()
@@ -149,6 +120,54 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function initiateDelete(user: User) {
+    setDeletingUser(user)
+    setCheckingItems(true)
+    setShowDeleteModal(true)
+    
+    try {
+      // Check for borrowed items
+      const res = await fetch(`/api/admin/users/${user.id}`)
+      const data = await res.json()
+      setBorrowedItems(data.items || [])
+    } catch (err) {
+      console.error('Failed to check borrowed items:', err)
+      setBorrowedItems([])
+    } finally {
+      setCheckingItems(false)
+    }
+  }
+
+  async function handleDelete(force = false) {
+    if (!deletingUser) return
+    
+    setDeleting(true)
+    try {
+      const url = `/api/admin/users/${deletingUser.id}${force ? '?force=true' : ''}`
+      const res = await fetch(url, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to delete')
+      }
+
+      const data = await res.json()
+      setUsers(users.filter(u => u.id !== deletingUser.id))
+      setShowDeleteModal(false)
+      setDeletingUser(null)
+      setBorrowedItems([])
+      
+      // Show success message
+      alert(data.message)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
     setInviting(true)
@@ -174,10 +193,6 @@ export default function AdminUsersPage() {
     } finally {
       setInviting(false)
     }
-  }
-
-  function handleDelete(id: string) {
-    setUsers(users.filter(u => u.id !== id))
   }
 
   if (loading) {
@@ -262,11 +277,12 @@ export default function AdminUsersPage() {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td>
-                    <DeleteButton 
-                      id={user.id} 
-                      email={user.email}
-                      onDelete={() => handleDelete(user.id)}
-                    />
+                    <button
+                      onClick={() => initiateDelete(user)}
+                      className="btn btn-error btn-xs"
+                    >
+                      🗑️
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -351,6 +367,101 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deletingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="card bg-base-100 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="card-body">
+              <h3 className="card-title text-error mb-4">🗑️ Delete User</h3>
+              
+              <p className="mb-4">
+                Are you sure you want to delete <strong>{deletingUser.fullName || deletingUser.email}</strong>?
+              </p>
+
+              {checkingItems ? (
+                <div className="flex items-center gap-2 py-4">
+                  <span className="loading loading-spinner loading-sm"></span>
+                  <span>Checking borrowed items...</span>
+                </div>
+              ) : borrowedItems.length > 0 ? (
+                <div className="alert alert-warning mb-4">
+                  <div>
+                    <p className="font-semibold">⚠️ This user has {borrowedItems.length} borrowed item(s):</p>
+                    <ul className="mt-2 text-sm space-y-1">
+                      {borrowedItems.map(item => (
+                        <li key={item.id} className="font-mono">{item.rfidTag}</li>
+                      ))}
+                    </ul>
+                    <p className="mt-3 text-sm">
+                      They must return all items before deletion, or use Force Delete to mark items as maintenance.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="alert alert-success mb-4">
+                  <span>✅ This user has no borrowed items.</span>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                {borrowedItems.length > 0 ? (
+                  <>
+                    <button
+                      onClick={() => handleDelete(true)}
+                      disabled={deleting || checkingItems}
+                      className="btn btn-error flex-1"
+                    >
+                      {deleting ? (
+                        <>
+                          <span className="loading loading-spinner loading-sm"></span>
+                          Deleting...
+                        </>
+                      ) : (
+                        '⚠️ Force Delete'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(false)}
+                      disabled={deleting || checkingItems}
+                      className="btn btn-outline flex-1"
+                    >
+                      Delete Anyway
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => handleDelete(false)}
+                    disabled={deleting || checkingItems}
+                    className="btn btn-error flex-1"
+                  >
+                    {deleting ? (
+                      <>
+                        <span className="loading loading-spinner loading-sm"></span>
+                        Deleting...
+                      </>
+                    ) : (
+                      'Delete User'
+                    )}
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setDeletingUser(null)
+                    setBorrowedItems([])
+                  }}
+                  disabled={deleting}
+                  className="btn btn-ghost"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
