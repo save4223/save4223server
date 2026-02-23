@@ -13,12 +13,13 @@ interface ToolType {
   imageUrl: string | null
 }
 
-export default function EditToolTypePage({ params }: { params: { id: string } }) {
+export default function EditToolTypePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [typeId, setTypeId] = useState<number | null>(null)
   
   const [formData, setFormData] = useState<Partial<ToolType>>({
     name: '',
@@ -28,9 +29,16 @@ export default function EditToolTypePage({ params }: { params: { id: string } })
     imageUrl: '',
   })
 
-  const typeId = parseInt(params.id)
+  // Unwrap params Promise
+  useEffect(() => {
+    params.then(({ id }) => {
+      setTypeId(parseInt(id))
+    })
+  }, [params])
 
   useEffect(() => {
+    if (!typeId) return
+    
     async function fetchToolType() {
       try {
         const res = await fetch(`/api/tool-types/${typeId}`)
@@ -48,6 +56,8 @@ export default function EditToolTypePage({ params }: { params: { id: string } })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!typeId) return
+    
     setSaving(true)
     setError(null)
     setSuccess(false)
@@ -73,7 +83,7 @@ export default function EditToolTypePage({ params }: { params: { id: string } })
     }
   }
 
-  if (loading) {
+  if (loading || !typeId) {
     return (
       <div className="flex items-center justify-center py-20">
         <span className="loading loading-spinner loading-lg text-accent"></span>
