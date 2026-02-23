@@ -234,6 +234,13 @@ export default function ProfilePage() {
               <p className="text-sm text-base-content/60">Browse available tools</p>
             </div>
           </Link>
+          <Link href="/user/pair-card" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
+            <div className="card-body items-center text-center py-6">
+              <div className="text-3xl mb-2">💳</div>
+              <h3 className="font-semibold">Pair NFC Card</h3>
+              <p className="text-sm text-base-content/60">Link your NFC card</p>
+            </div>
+          </Link>
         </div>
       </div>
     </main>

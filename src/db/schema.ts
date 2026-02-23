@@ -107,6 +107,15 @@ export const inventoryTransactions = pgTable('inventory_transactions', {
   timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
 })
 
+// Pairing Codes - Temporary codes for linking NFC cards
+export const pairingCodes = pgTable('pairing_codes', {
+  id: serial('id').primaryKey(),
+  userId: uuid('user_id').notNull().unique(), // One active code per user
+  token: varchar('token', { length: 64 }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
 // Types
 export type Profile = typeof profiles.$inferSelect
 export type NewProfile = typeof profiles.$inferInsert
