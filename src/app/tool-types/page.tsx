@@ -4,7 +4,7 @@ import { itemTypes, items } from '@/db/schema'
 import { eq, sql } from 'drizzle-orm'
 
 export default async function ToolTypesPage() {
-  // 获取所有工具类型及其统计
+  // Get all tool types with stats
   const types = await db.select({
     type: itemTypes,
     total: sql<number>`count(${items.id})`,
@@ -25,11 +25,11 @@ export default async function ToolTypesPage() {
                 href="/tools"
                 className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
               >
-                ← 返回工具库
+                ← Back to Tools
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">工具类型管理</h1>
-                <p className="mt-1 text-sm text-gray-600">管理工具分类和借用规则</p>
+                <h1 className="text-3xl font-bold text-gray-900">Tool Types</h1>
+                <p className="mt-1 text-sm text-gray-600">Manage tool categories and borrowing rules</p>
               </div>
             </div>
           </div>
@@ -37,51 +37,51 @@ export default async function ToolTypesPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* 统计概览 */}
+        {/* Stats Overview */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <div className="rounded-xl bg-white p-6 shadow">
             <div className="text-3xl font-bold text-blue-600">{types.length}</div>
-            <div className="mt-1 text-sm text-gray-600">工具类型总数</div>
+            <div className="mt-1 text-sm text-gray-600">Total Tool Types</div>
           </div>
           <div className="rounded-xl bg-white p-6 shadow">
             <div className="text-3xl font-bold text-green-600">
               {types.reduce((sum, t) => sum + t.available, 0)}
             </div>
-            <div className="mt-1 text-sm text-gray-600">可借工具总数</div>
+            <div className="mt-1 text-sm text-gray-600">Available Tools</div>
           </div>
           <div className="rounded-xl bg-white p-6 shadow">
             <div className="text-3xl font-bold text-purple-600">
               {types.reduce((sum, t) => sum + t.total, 0)}
             </div>
-            <div className="mt-1 text-sm text-gray-600">工具实例总数</div>
+            <div className="mt-1 text-sm text-gray-600">Total Tool Items</div>
           </div>
         </div>
 
-        {/* 类型列表 */}
+        {/* Type List */}
         <div className="mt-8 overflow-hidden rounded-xl bg-white shadow">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  图片
+                  Image
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  类型名称
+                  Type Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  分类
+                  Category
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  最大借用时长
+                  Max Borrow Duration
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  工具数量
+                  Total Items
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  可用数量
+                  Available
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  操作
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -106,7 +106,7 @@ export default async function ToolTypesPage() {
                       <div>
                         <div className="text-sm font-medium text-gray-900">{type.name}</div>
                         <div className="text-sm text-gray-500 line-clamp-1 max-w-xs">
-                          {type.description || '暂无描述'}
+                          {type.description || 'No description'}
                         </div>
                       </div>
                     </div>
@@ -132,7 +132,7 @@ export default async function ToolTypesPage() {
                       href={`/tools?type=${type.id}`}
                       className="text-blue-600 hover:text-blue-900"
                     >
-                      查看工具
+                      View Tools
                     </Link>
                   </td>
                 </tr>
@@ -141,12 +141,12 @@ export default async function ToolTypesPage() {
           </table>
         </div>
 
-        {/* 空状态 */}
+        {/* Empty State */}
         {types.length === 0 && (
           <div className="mt-8 rounded-xl bg-white p-12 text-center shadow">
             <div className="text-6xl">📦</div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">暂无工具类型</h3>
-            <p className="mt-2 text-gray-500">请先创建工具类型</p>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No Tool Types</h3>
+            <p className="mt-2 text-gray-500">Please create tool types first</p>
           </div>
         )}
       </div>

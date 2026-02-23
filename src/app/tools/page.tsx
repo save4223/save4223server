@@ -27,27 +27,27 @@ interface ToolType {
 }
 
 const CATEGORIES: { key: Category; label: string; icon: string }[] = [
-  { key: 'ALL', label: '全部', icon: '🔍' },
-  { key: 'TOOL', label: '工具', icon: '🔧' },
-  { key: 'DEVICE', label: '设备', icon: '🔌' },
-  { key: 'CONSUMABLE', label: '耗材', icon: '📦' },
+  { key: 'ALL', label: 'All', icon: '🔍' },
+  { key: 'TOOL', label: 'Tools', icon: '🔧' },
+  { key: 'DEVICE', label: 'Devices', icon: '🔌' },
+  { key: 'CONSUMABLE', label: 'Consumables', icon: '📦' },
 ]
 
 function StatusBadge({ status, dueAt }: { status: ItemStatus; dueAt: string | null }) {
   const isOverdue = dueAt && new Date(dueAt) < new Date()
   
   if (status === 'AVAILABLE') {
-    return <span className="badge badge-success">可借</span>
+    return <span className="badge badge-success">Available</span>
   }
   if (status === 'BORROWED') {
-    return <span className={`badge ${isOverdue ? 'badge-error' : 'badge-warning'}`}>{isOverdue ? '已逾期' : '已借出'}</span>
+    return <span className={`badge ${isOverdue ? 'badge-error' : 'badge-warning'}`}>{isOverdue ? 'Overdue' : 'Borrowed'}</span>
   }
-  return <span className="badge badge-neutral">{status === 'MISSING' ? '丢失' : '维护中'}</span>
+  return <span className="badge badge-neutral">{status === 'MISSING' ? 'Missing' : 'Maintenance'}</span>
 }
 
 function CategoryBadge({ category }: { category: string }) {
   const icons: Record<string, string> = { TOOL: '🔧', DEVICE: '🔌', CONSUMABLE: '📦' }
-  const labels: Record<string, string> = { TOOL: '工具', DEVICE: '设备', CONSUMABLE: '耗材' }
+  const labels: Record<string, string> = { TOOL: 'Tool', DEVICE: 'Device', CONSUMABLE: 'Consumable' }
   
   return (
     <span className="badge badge-ghost">
@@ -122,9 +122,9 @@ export default function ToolsGalleryPage() {
           <div className="card bg-base-200 shadow-xl">
             <div className="card-body items-center text-center">
               <div className="text-4xl">⚠️</div>
-              <h2 className="card-title text-error">加载失败</h2>
+              <h2 className="card-title text-error">Failed to Load</h2>
               <p>{error}</p>
-              <button onClick={() => window.location.reload()} className="btn btn-accent btn-sm mt-4">重试</button>
+              <button onClick={() => window.location.reload()} className="btn btn-accent btn-sm mt-4">Retry</button>
             </div>
           </div>
         </div>
@@ -139,12 +139,12 @@ export default function ToolsGalleryPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-accent">🔧 工具库</h1>
-              <p className="text-accent/70 text-sm mt-1">共 {stats.totalTypes} 种 · {stats.totalItems} 个 · {stats.availableItems} 可借</p>
+              <h1 className="text-2xl font-bold text-accent">🔧 Tool Library</h1>
+              <p className="text-accent/70 text-sm mt-1">{stats.totalTypes} types · {stats.totalItems} items · {stats.availableItems} available</p>
             </div>
             <div className="flex gap-2">
-              <Link href="/user/items" className="btn btn-accent btn-sm">我的物品</Link>
-              <Link href="/tool-types" className="btn btn-ghost btn-sm">管理类型</Link>
+              <Link href="/user/items" className="btn btn-accent btn-sm">My Items</Link>
+              <Link href="/tool-types" className="btn btn-ghost btn-sm">Manage Types</Link>
             </div>
           </div>
 
@@ -152,7 +152,7 @@ export default function ToolsGalleryPage() {
           <div className="relative mt-4">
             <input
               type="text"
-              placeholder="搜索工具名称、描述、位置或 RFID..."
+              placeholder="Search by name, description, location, or RFID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input input-bordered w-full bg-base-100"
@@ -181,14 +181,14 @@ export default function ToolsGalleryPage() {
           <div className="card bg-base-200">
             <div className="card-body items-center text-center py-20">
               <div className="text-6xl">🔍</div>
-              <h3 className="text-xl font-bold mt-4">{tools.length === 0 ? '暂无工具数据' : '未找到匹配的工具'}</h3>
-              <p className="text-base-content/60 mt-2">{tools.length === 0 ? '请先添加工具类型和工具' : '尝试调整搜索词或筛选条件'}</p>
+              <h3 className="text-xl font-bold mt-4">{tools.length === 0 ? 'No Tools Available' : 'No Matching Tools'}</h3>
+              <p className="text-base-content/60 mt-2">{tools.length === 0 ? 'Please add tool types and items first' : 'Try adjusting your search or filter'}</p>
               {tools.length > 0 && (
                 <button
                   onClick={() => { setSearchQuery(''); setSelectedCategory('ALL') }}
                   className="btn btn-accent btn-sm mt-4"
                 >
-                  清除筛选
+                  Clear Filters
                 </button>
               )}
             </div>
@@ -220,12 +220,12 @@ export default function ToolsGalleryPage() {
                           <CategoryBadge category={tool.category} />
                         </div>
                         
-                        <p className="text-base-content/70 mt-1 line-clamp-2">{tool.description || '暂无描述'}</p>
+                        <p className="text-base-content/70 mt-1 line-clamp-2">{tool.description || 'No description'}</p>
                         
                         <div className="flex flex-wrap gap-2 mt-3">
-                          <span className="badge badge-success">{availableCount} 可借</span>
-                          <span className="badge badge-ghost">共 {tool.items.length} 个</span>
-                          <span className="badge badge-ghost">最长借用 {tool.maxBorrowDuration}</span>
+                          <span className="badge badge-success">{availableCount} Available</span>
+                          <span className="badge badge-ghost">{tool.items.length} Total</span>
+                          <span className="badge badge-ghost">Max {tool.maxBorrowDuration}</span>
                         </div>
                       </div>
                     </div>
@@ -233,7 +233,7 @@ export default function ToolsGalleryPage() {
 
                   <div className="bg-base-200 px-6 py-4">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-base-content/60 mb-3">
-                      个体清单 · 存放于 {tool.items[0]?.homeLocation || 'N/A'}
+                      Item List · Stored at {tool.items[0]?.homeLocation || 'N/A'}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {tool.items.map((item) => (
@@ -249,9 +249,9 @@ export default function ToolsGalleryPage() {
                           
                           {item.status === 'BORROWED' && item.holderName && (
                             <div className="absolute bottom-full left-0 mb-2 hidden w-max max-w-xs rounded-lg bg-accent px-3 py-2 text-xs text-accent-content shadow-lg group-hover:block z-10">
-                              <div>借用人: {item.holderName}</div>
-                              <div>邮箱: {item.holderEmail}</div>
-                              <div>应还: {item.dueAt ? new Date(item.dueAt).toLocaleDateString('zh-CN') : '-'}</div>
+                              <div>Borrower: {item.holderName}</div>
+                              <div>Email: {item.holderEmail}</div>
+                              <div>Due: {item.dueAt ? new Date(item.dueAt).toLocaleDateString('en-US') : '-'}</div>
                               <div className="absolute -bottom-1 left-4 h-2 w-2 rotate-45 bg-accent" />
                             </div>
                           )}

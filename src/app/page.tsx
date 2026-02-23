@@ -11,7 +11,7 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 获取统计数据
+  // Get statistics
   const stats = await db.select({
     totalTypes: sql<number>`count(distinct ${itemTypes.id})`,
     totalItems: sql<number>`count(${items.id})`,
@@ -35,7 +35,7 @@ export default async function Home() {
           <h1 className="mb-4 text-4xl font-bold text-accent">
             🔧 Smart Lab Inventory
           </h1>
-          <p className="mb-8 text-xl text-base-content/70">智能实验室工具管理系统</p>
+          <p className="mb-8 text-xl text-base-content/70">Smart Lab Tool Management System</p>
 
           {user ? (
             <div className="flex items-center justify-center gap-4">
@@ -47,7 +47,7 @@ export default async function Home() {
                   type="submit"
                   className="btn btn-error btn-sm"
                 >
-                  退出登录
+                  Sign Out
                 </button>
               </form>
             </div>
@@ -56,12 +56,12 @@ export default async function Home() {
               href="/login"
               className="btn btn-accent btn-lg"
             >
-              登录
+              Sign In
             </Link>
           )}
         </div>
 
-        {/* 统计卡片 */}
+        {/* Statistics Cards */}
         <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
           <Link
             href="/tools"
@@ -72,9 +72,9 @@ export default async function Home() {
               <div className="text-3xl font-bold text-accent">
                 {stats[0]?.totalTypes || 0}
               </div>
-              <div className="mt-2 text-base-content/70">工具类型</div>
+              <div className="mt-2 text-base-content/70">Tool Types</div>
               <div className="mt-4 text-sm text-accent">
-                查看全部 →
+                View All →
               </div>
             </div>
           </Link>
@@ -88,9 +88,9 @@ export default async function Home() {
               <div className="text-3xl font-bold text-accent">
                 {stats[0]?.totalItems || 0}
               </div>
-              <div className="mt-2 text-base-content/70">工具总数</div>
+              <div className="mt-2 text-base-content/70">Total Items</div>
               <div className="mt-4 text-sm text-accent">
-                查看全部 →
+                View All →
               </div>
             </div>
           </Link>
@@ -101,18 +101,18 @@ export default async function Home() {
           >
             <div className="card-body items-center text-center">
               <div className="text-4xl mb-4">✅</div>
-              <div className="text-3xl font-bold text-success">
+              <div className="text-3xl font-bold text-accent">
                 {stats[0]?.availableItems || 0}
               </div>
-              <div className="mt-2 text-base-content/70">可借数量</div>
-              <div className="mt-4 text-sm text-success">
-                立即借用 →
+              <div className="mt-2 text-base-content/70">Available</div>
+              <div className="mt-4 text-sm text-accent">
+                Borrow Now →
               </div>
             </div>
           </Link>
         </div>
 
-        {/* 功能模块 */}
+        {/* Feature Modules */}
         <div className="grid gap-6 md:grid-cols-2">
           <Link
             href="/tools"
@@ -123,9 +123,9 @@ export default async function Home() {
                 🔧
               </div>
               <div className="ml-6">
-                <h2 className="card-title text-xl">工具库</h2>
+                <h2 className="card-title text-xl">Tool Library</h2>
                 <p className="mt-2 text-base-content/70">
-                  浏览所有可用工具，按类型查看，查看借用状态
+                  Browse all available tools, view by type, check borrowing status
                 </p>
               </div>
             </div>
@@ -140,9 +140,9 @@ export default async function Home() {
                 📋
               </div>
               <div className="ml-6">
-                <h2 className="card-title text-xl">工具类型</h2>
+                <h2 className="card-title text-xl">Tool Types</h2>
                 <p className="mt-2 text-base-content/70">
-                  管理工具分类，设置借用规则和归还期限
+                  Manage tool categories, set borrowing rules and return deadlines
                 </p>
               </div>
             </div>
@@ -157,8 +157,8 @@ export default async function Home() {
                 📊
               </div>
               <div className="ml-6">
-                <h2 className="card-title text-xl">我的物品</h2>
-                <p className="mt-2 text-base-content/70">查看当前借用物品和交易记录</p>
+                <h2 className="card-title text-xl">My Items</h2>
+                <p className="mt-2 text-base-content/70">View currently borrowed items and transaction history</p>
               </div>
             </div>
           </Link>
@@ -169,8 +169,8 @@ export default async function Home() {
                 🚪
               </div>
               <div className="ml-6">
-                <h2 className="card-title text-xl">智能柜管理</h2>
-                <p className="mt-2 text-base-content/70">管理储物柜位置和访问权限（开发中）</p>
+                <h2 className="card-title text-xl">Smart Cabinet</h2>
+                <p className="mt-2 text-base-content/70">Manage cabinet locations and access permissions (In Development)</p>
               </div>
             </div>
           </div>

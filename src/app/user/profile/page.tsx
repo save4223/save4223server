@@ -31,13 +31,13 @@ export default function ProfilePage() {
             router.push('/login')
             return
           }
-          throw new Error('获取资料失败')
+          throw new Error('Failed to load profile')
         }
         const data = await res.json()
         setProfile(data)
         setFullName(data.fullName || '')
       } catch (err) {
-        setError(err instanceof Error ? err.message : '未知错误')
+        setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)
       }
@@ -57,14 +57,14 @@ export default function ProfilePage() {
         body: JSON.stringify({ full_name: fullName }),
       })
       
-      if (!res.ok) throw new Error('保存失败')
+      if (!res.ok) throw new Error('Save failed')
       
       const updated = await res.json()
       setProfile(updated)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败')
+      setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSaving(false)
     }
@@ -88,7 +88,7 @@ export default function ProfilePage() {
             <div className="card-body items-center text-center">
               <div className="text-4xl">⚠️</div>
               <h2 className="card-title text-error">{error}</h2>
-              <Link href="/" className="btn btn-accent btn-sm mt-4">返回首页</Link>
+              <Link href="/" className="btn btn-accent btn-sm mt-4">Back to Home</Link>
             </div>
           </div>
         </div>
@@ -103,11 +103,11 @@ export default function ProfilePage() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-accent">👤 个人资料</h1>
-              <p className="text-accent/70 text-sm mt-1">管理你的个人信息</p>
+              <h1 className="text-2xl font-bold text-accent">👤 Profile</h1>
+              <p className="text-accent/70 text-sm mt-1">Manage your personal information</p>
             </div>
             <Link href="/user/items" className="btn btn-accent btn-sm">
-              我的物品
+              My Items
             </Link>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                 </h2>
                 <p className="text-base-content/60 text-sm">{profile?.email}</p>
                 <p className="text-base-content/50 text-xs mt-1">
-                  注册于 {new Date(profile?.createdAt || '').toLocaleDateString('zh-CN')}
+                  Joined {new Date(profile?.createdAt || '').toLocaleDateString('en-US')}
                 </p>
               </div>
             </div>
@@ -145,19 +145,19 @@ export default function ProfilePage() {
             <form onSubmit={handleSubmit}>
               <div className="form-control mb-4">
                 <label className="label">
-                  <span className="label-text font-semibold">显示名称</span>
+                  <span className="label-text font-semibold">Display Name</span>
                 </label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="输入你的名字"
+                  placeholder="Enter your name"
                   className="input input-bordered w-full"
                   maxLength={50}
                 />
                 <label className="label">
                   <span className="label-text-alt text-base-content/50">
-                    其他用户将看到这个名称
+                    Other users will see this name
                   </span>
                 </label>
               </div>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
               {/* Email (readonly) */}
               <div className="form-control mb-6">
                 <label className="label">
-                  <span className="label-text font-semibold">邮箱</span>
+                  <span className="label-text font-semibold">Email</span>
                 </label>
                 <input
                   type="email"
@@ -175,7 +175,7 @@ export default function ProfilePage() {
                 />
                 <label className="label">
                   <span className="label-text-alt text-base-content/50">
-                    邮箱不可修改
+                    Email cannot be changed
                   </span>
                 </label>
               </div>
@@ -183,7 +183,7 @@ export default function ProfilePage() {
               {/* Success Message */}
               {saveSuccess && (
                 <div className="alert alert-success mb-4">
-                  <span>✅ 资料已更新！</span>
+                  <span>✅ Profile updated!</span>
                 </div>
               )}
 
@@ -204,14 +204,14 @@ export default function ProfilePage() {
                   {saving ? (
                     <>
                       <span className="loading loading-spinner loading-sm"></span>
-                      保存中...
+                      Saving...
                     </>
                   ) : (
-                    '保存修改'
+                    'Save Changes'
                   )}
                 </button>
                 <Link href="/" className="btn btn-ghost">
-                  取消
+                  Cancel
                 </Link>
               </div>
             </form>
@@ -223,15 +223,15 @@ export default function ProfilePage() {
           <Link href="/user/items" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
             <div className="card-body items-center text-center py-6">
               <div className="text-3xl mb-2">📦</div>
-              <h3 className="font-semibold">我的物品</h3>
-              <p className="text-sm text-base-content/60">查看借用记录</p>
+              <h3 className="font-semibold">My Items</h3>
+              <p className="text-sm text-base-content/60">View borrowing history</p>
             </div>
           </Link>
           <Link href="/tools" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
             <div className="card-body items-center text-center py-6">
               <div className="text-3xl mb-2">🔧</div>
-              <h3 className="font-semibold">工具库</h3>
-              <p className="text-sm text-base-content/60">浏览可用工具</p>
+              <h3 className="font-semibold">Tool Library</h3>
+              <p className="text-sm text-base-content/60">Browse available tools</p>
             </div>
           </Link>
         </div>

@@ -51,19 +51,19 @@ function StatusBadge({ status, dueAt }: { status: ItemStatus; dueAt: string | nu
   const isOverdue = dueAt && new Date(dueAt) < new Date()
   
   if (status === 'BORROWED' && isOverdue) {
-    return <span className="badge badge-error">已逾期</span>
+    return <span className="badge badge-error">Overdue</span>
   }
   if (status === 'BORROWED') {
-    return <span className="badge badge-warning">借用中</span>
+    return <span className="badge badge-warning">Borrowed</span>
   }
   return <span className="badge badge-neutral">{status}</span>
 }
 
 function ActionBadge({ action }: { action: TransactionAction }) {
   const configs = {
-    BORROW: { class: 'badge-accent', label: '借用' },
-    RETURN: { class: 'badge-success', label: '归还' },
-    MISSING_UNEXPECTED: { class: 'badge-error', label: '异常丢失' },
+    BORROW: { class: 'badge-accent', label: 'Borrow' },
+    RETURN: { class: 'badge-success', label: 'Return' },
+    MISSING_UNEXPECTED: { class: 'badge-error', label: 'Missing' },
   }
   const config = configs[action]
   return <span className={`badge ${config.class}`}>{config.label}</span>
@@ -90,14 +90,14 @@ export default function UserItemsPage() {
         const res = await fetch('/api/user/items')
         if (!res.ok) {
           if (res.status === 401) {
-            throw new Error('请先登录')
+            throw new Error('Please sign in first')
           }
-          throw new Error('获取数据失败')
+          throw new Error('Failed to load data')
         }
         const result = await res.json()
         setData(result)
       } catch (err) {
-        setError(err instanceof Error ? err.message : '未知错误')
+        setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)
       }
@@ -123,7 +123,7 @@ export default function UserItemsPage() {
             <div className="card-body items-center text-center">
               <div className="text-4xl">⚠️</div>
               <h2 className="card-title text-error">{error}</h2>
-              <Link href="/login" className="btn btn-accent btn-sm mt-4">去登录</Link>
+              <Link href="/login" className="btn btn-accent btn-sm mt-4">Sign In</Link>
             </div>
           </div>
         </div>
@@ -141,21 +141,21 @@ export default function UserItemsPage() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-accent">📋 我的物品</h1>
-              <p className="text-accent/70 text-sm mt-1">查看借用物品和交易记录</p>
+              <h1 className="text-2xl font-bold text-accent">📋 My Items</h1>
+              <p className="text-accent/70 text-sm mt-1">View borrowed items and transaction history</p>
             </div>
             <Link href="/tools" className="btn btn-accent btn-sm">
-              去工具库
+              Browse Tools
             </Link>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* 当前持有物品 */}
+        {/* Currently Held Items */}
         <section className="mb-10">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-bold text-base-content">📦 当前借用物品</h2>
+            <h2 className="text-xl font-bold text-base-content">📦 Currently Borrowed</h2>
             <span className="badge badge-accent">{heldItems.length}</span>
           </div>
 
@@ -163,8 +163,8 @@ export default function UserItemsPage() {
             <div className="card bg-base-200">
               <div className="card-body items-center text-center py-12">
                 <div className="text-5xl">📭</div>
-                <p className="text-base-content/60 mt-4">暂无借用物品</p>
-                <Link href="/tools" className="btn btn-accent btn-sm mt-4">去借用工具</Link>
+                <p className="text-base-content/60 mt-4">No borrowed items</p>
+                <Link href="/tools" className="btn btn-accent btn-sm mt-4">Borrow Tools</Link>
               </div>
             </div>
           ) : (
@@ -190,21 +190,21 @@ export default function UserItemsPage() {
                         </div>
                         
                         <div className="flex justify-between text-sm">
-                          <span className="text-base-content/60">存放位置:</span>
+                          <span className="text-base-content/60">Location:</span>
                           <span>{item.homeLocation}</span>
                         </div>
                         
                         <div className="flex justify-between text-sm">
-                          <span className="text-base-content/60">应还日期:</span>
+                          <span className="text-base-content/60">Due Date:</span>
                           <span className={isOverdue ? 'text-error font-semibold' : ''}>
-                            {item.dueAt ? new Date(item.dueAt).toLocaleDateString('zh-CN') : '未设置'}
+                            {item.dueAt ? new Date(item.dueAt).toLocaleDateString('en-US') : 'Not Set'}
                           </span>
                         </div>
                       </div>
 
                       {isOverdue && (
                         <div className="alert alert-error alert-sm mt-4">
-                          <span>⚠️ 已逾期，请尽快归还！</span>
+                          <span>⚠️ Overdue! Please return soon!</span>
                         </div>
                       )}
                     </div>
@@ -215,18 +215,18 @@ export default function UserItemsPage() {
           )}
         </section>
 
-        {/* 最近交易记录 */}
+        {/* Recent Transactions */}
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-bold text-base-content">📜 最近交易记录</h2>
-            <span className="badge badge-neutral">最近5次</span>
+            <h2 className="text-xl font-bold text-base-content">📜 Recent Transactions</h2>
+            <span className="badge badge-neutral">Last 5</span>
           </div>
 
           {transactions.length === 0 ? (
             <div className="card bg-base-200">
               <div className="card-body items-center text-center py-12">
                 <div className="text-5xl">📭</div>
-                <p className="text-base-content/60 mt-4">暂无交易记录</p>
+                <p className="text-base-content/60 mt-4">No transactions yet</p>
               </div>
             </div>
           ) : (
@@ -235,10 +235,10 @@ export default function UserItemsPage() {
                 <table className="table table-zebra">
                   <thead>
                     <tr className="bg-base-200">
-                      <th>操作</th>
-                      <th>物品</th>
+                      <th>Action</th>
+                      <th>Item</th>
                       <th>RFID</th>
-                      <th>时间</th>
+                      <th>Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -251,7 +251,7 @@ export default function UserItemsPage() {
                         </td>
                         <td className="font-mono text-sm">{tx.item.rfidTag}</td>
                         <td className="text-sm text-base-content/70">
-                          {new Date(tx.timestamp).toLocaleString('zh-CN', {
+                          {new Date(tx.timestamp).toLocaleString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             hour: '2-digit',
