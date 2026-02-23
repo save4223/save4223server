@@ -13,13 +13,18 @@ interface ToolType {
   imageUrl: string | null
 }
 
+type ImageInputMode = 'url' | 'upload'
+
 export default function EditToolTypePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [typeId, setTypeId] = useState<number | null>(null)
+  const [imageMode, setImageMode] = useState<ImageInputMode>('url')
+  const [uploadProgress, setUploadProgress] = useState(0)
   
   const [formData, setFormData] = useState<Partial<ToolType>>({
     name: '',
@@ -53,6 +58,52 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
     }
     fetchToolType()
   }, [typeId])
+
+  async function handleImageUpload(file: File) {
+    if (!file) return
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Allowed: JPEG, PNG, GIF, WebP')
+      return
+    }
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError('File too large. Max size: 5MB')
+      return
+    }
+
+    setUploading(true)
+    setUploadProgress(0)
+    setError(null)
+
+    try {
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+
+      const res = await fetch('/api/tool-types/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Upload failed')
+      }
+
+      const { url } = await res.json()
+      setFormData(prev => ({ ...prev, imageUrl: url }))
+      setImageMode('url') // Switch back to URL mode to show the uploaded URL
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image')
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -165,26 +216,86 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
             </label>
           </div>
 
-          {/* Image URL */}
+          {/* Image Input - Toggle between URL and Upload */}
           <div className="form-control mb-6">
             <label className="label">
-              <span className="label-text font-semibold">Image URL</span>
+              <span className="label-text font-semibold">Image</span>
             </label>
-            <input
-              type="url"
-              value={formData.imageUrl || ''}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              className="input input-bordered w-full"
-              placeholder="https://example.com/image.jpg"
-            />
+            
+            {/* Toggle Buttons */}
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setImageMode('url')}
+                className={`btn btn-sm ${imageMode === 'url' ? 'btn-accent' : 'btn-ghost'}`}
+              >
+                🌐 URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageMode('upload')}
+                className={`btn btn-sm ${imageMode === 'upload' ? 'btn-accent' : 'btn-ghost'}`}
+              >
+                📤 Upload
+              </button>
+            </div>
+
+            {/* URL Input */}
+            {imageMode === 'url' && (
+              <input
+                type="url"
+                value={formData.imageUrl || ''}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                className="input input-bordered w-full"
+                placeholder="https://example.com/image.jpg"
+              />
+            )}
+
+            {/* File Upload */}
+            {imageMode === 'upload' && (
+              <div className="border-2 border-dashed border-base-300 rounded-lg p-6 text-center">
+                {uploading ? (
+                  <div className="py-4">
+                    <span className="loading loading-spinner loading-md text-accent"></span>
+                    <p className="mt-2 text-sm text-base-content/60">Uploading... {uploadProgress}%</p>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleImageUpload(file)
+                      }}
+                      className="file-input file-input-bordered w-full"
+                    />
+                    <p className="mt-2 text-xs text-base-content/50">
+                      Max 5MB. Supports: JPEG, PNG, GIF, WebP
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Image Preview */}
             {formData.imageUrl && (
-              <div className="mt-2">
-                <img 
-                  src={formData.imageUrl} 
-                  alt="Preview" 
-                  className="h-20 w-20 object-cover rounded-lg"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
+              <div className="mt-4">
+                <p className="text-sm text-base-content/60 mb-2">Preview:</p>
+                <div className="relative h-32 w-32 rounded-lg overflow-hidden bg-base-200 border border-base-300">
+                  <img 
+                    src={formData.imageUrl} 
+                    alt="Preview" 
+                    className="h-full w-full object-cover"
+                    onError={(e) => { 
+                      (e.target as HTMLImageElement).style.display = 'none'
+                      ;(e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="flex h-full items-center justify-center text-error text-xs">Failed to load</span>'
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-base-content/50 truncate max-w-md">
+                  {formData.imageUrl}
+                </p>
               </div>
             )}
           </div>
@@ -207,7 +318,7 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploading}
               className="btn btn-accent flex-1"
             >
               {saving ? (
