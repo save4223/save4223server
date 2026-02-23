@@ -163,17 +163,24 @@ export default async function Home() {
             </div>
           </Link>
 
-          {/* <div className="card bg-base-100 shadow-md border border-base-300">
+          
+
+          <Link
+            href="/user/profile"
+            className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
+          >
+            <div className="card bg-base-100 shadow-md border border-base-300">
             <div className="card-body flex flex-row items-center">
               <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-neutral text-3xl">
-                🚪
+                👤
               </div>
               <div className="ml-6">
-                <h2 className="card-title text-xl">Smart Cabinet</h2>
-                <p className="mt-2 text-base-content/70">Manage cabinet locations and access permissions (In Development)</p>
+                <h2 className="card-title text-xl">Profile</h2>
+                <p className="mt-2 text-base-content/70">Manage your account settings</p>
               </div>
             </div>
-          </div> */}
+          </div>
+          </Link>
         </div>
 
         {/* Footer */}
