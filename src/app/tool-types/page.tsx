@@ -3,6 +3,17 @@ import { db } from '@/db'
 import { itemTypes, items } from '@/db/schema'
 import { eq, sql, count } from 'drizzle-orm'
 import { createClient } from '@/utils/supabase/server'
+import { ClipboardList, CheckCircle, Package, Wrench, Zap, Box, ArrowLeft, Pencil, Settings } from 'lucide-react'
+
+// Category icon mapping - same as tools page
+function CategoryIcon({ category }: { category: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    TOOL: <Wrench className="w-10 h-10 text-base-content/30" />,
+    DEVICE: <Zap className="w-10 h-10 text-base-content/30" />,
+    CONSUMABLE: <Box className="w-10 h-10 text-base-content/30" />,
+  }
+  return icons[category] || <Package className="w-10 h-10 text-base-content/30" />
+}
 
 export default async function ToolTypesPage() {
   // Get current user to check admin status
@@ -53,16 +64,16 @@ export default async function ToolTypesPage() {
                 href="/tools"
                 className="btn btn-ghost btn-sm"
               >
-                ← Back to Tools
+                <ArrowLeft className="w-4 h-4 mr-1" /> Back to Tools
               </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-accent">📋 Tool Types</h1>
-                <p className="text-accent/70 text-sm mt-1">Manage tool categories and borrowing rules</p>
+              <div className="flex items-center gap-2">
+                <ClipboardList className="w-6 h-6 text-accent" />
+                <h1 className="text-xl sm:text-2xl font-bold text-accent">Tool Types</h1>
               </div>
             </div>
             {isAdmin && (
               <Link href="/admin/tool-types" className="btn btn-accent btn-sm">
-                ⚙️ Admin Dashboard
+                <Settings className="w-4 h-4 mr-1" /> Admin Dashboard
               </Link>
             )}
           </div>
@@ -70,25 +81,25 @@ export default async function ToolTypesPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Overview - DaisyUI cards */}
+        {/* Stats Overview - DaisyUI cards matching homepage style */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <div className="card bg-base-100 shadow-lg border border-base-300">
             <div className="card-body items-center text-center">
-              <div className="text-4xl mb-4">📋</div>
+              <ClipboardList className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">{totalTypes}</div>
               <div className="mt-2 text-base-content/70">Total Tool Types</div>
             </div>
           </div>
           <div className="card bg-base-100 shadow-lg border border-base-300">
             <div className="card-body items-center text-center">
-              <div className="text-4xl mb-4">✅</div>
+              <CheckCircle className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">{totalAvailable}</div>
               <div className="mt-2 text-base-content/70">Available Tools</div>
             </div>
           </div>
           <div className="card bg-base-100 shadow-lg border border-base-300">
             <div className="card-body items-center text-center">
-              <div className="text-4xl mb-4">📦</div>
+              <Package className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">{totalItems}</div>
               <div className="mt-2 text-base-content/70">Total Tool Items</div>
             </div>
@@ -118,11 +129,7 @@ export default async function ToolTypesPage() {
                         {type.imageUrl ? (
                           <img src={type.imageUrl} alt={type.name} className="h-full w-full object-cover" />
                         ) : (
-                          <span className="text-3xl">
-                            {type.category === 'TOOL' && '🔧'}
-                            {type.category === 'DEVICE' && '🔌'}
-                            {type.category === 'CONSUMABLE' && '📦'}
-                          </span>
+                          <CategoryIcon category={type.category} />
                         )}
                       </div>
                     </td>
@@ -156,7 +163,7 @@ export default async function ToolTypesPage() {
                           href={`/admin/tool-types/${type.id}/edit`}
                           className="btn btn-warning btn-sm"
                         >
-                          ✏️ Edit
+                          <Pencil className="w-4 h-4 mr-1" /> Edit
                         </Link>
                       </td>
                     )}
@@ -171,7 +178,7 @@ export default async function ToolTypesPage() {
         {typesWithStats.length === 0 && (
           <div className="mt-8 card bg-base-200">
             <div className="card-body items-center text-center py-12">
-              <div className="text-6xl">📦</div>
+              <Package className="w-16 h-16 text-base-content/30 mb-4" />
               <h3 className="text-xl font-bold mt-4">No Tool Types</h3>
               <p className="text-base-content/60 mt-2">Please create tool types first</p>
             </div>
