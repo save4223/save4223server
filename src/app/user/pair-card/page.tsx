@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { CreditCard, ArrowLeft, AlertCircle, CheckCircle, XCircle, QrCode, Smartphone, Trash2 } from 'lucide-react'
 
 interface PairingToken {
   token: string
@@ -125,16 +126,14 @@ export default function PairCardPage() {
     <main className="min-h-screen bg-base-100">
       {/* Header */}
       <div className="bg-primary shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <Link href="/user/profile" className="btn btn-ghost btn-sm w-fit">
-                ← Back
-              </Link>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-accent">💳 Pair NFC Card</h1>
-                <p className="text-accent/70 text-sm mt-1 hidden sm:block">Link your NFC card to your account</p>
-              </div>
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <Link href="/user/profile" className="btn btn-ghost btn-sm w-fit">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Link>
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-6 h-6 text-accent" />
+              <h1 className="text-xl sm:text-2xl font-bold text-accent">Pair NFC Card</h1>
             </div>
           </div>
         </div>
@@ -144,7 +143,8 @@ export default function PairCardPage() {
         {/* Error */}
         {error && (
           <div className="alert alert-error mb-6">
-            <span>❌ {error}</span>
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
             <button onClick={() => setError(null)} className="btn btn-sm btn-ghost">Dismiss</button>
           </div>
         )}
@@ -152,11 +152,14 @@ export default function PairCardPage() {
         {/* Current Cards Section */}
         <div className="card bg-base-100 shadow-lg border border-base-300 mb-8">
           <div className="card-body">
-            <h2 className="card-title text-lg mb-4">🔗 Linked Cards</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="w-5 h-5" />
+              <h2 className="card-title text-lg">Linked Cards</h2>
+            </div>
             
             {userCards.length === 0 ? (
               <div className="text-center py-8 bg-base-200 rounded-lg">
-                <div className="text-4xl mb-2">💳</div>
+                <CreditCard className="w-10 h-10 text-base-content/30 mx-auto mb-2" />
                 <p className="text-base-content/60">No cards linked yet</p>
               </div>
             ) : (
@@ -164,7 +167,7 @@ export default function PairCardPage() {
                 {userCards.map((card) => (
                   <div key={card.id} className="flex items-center justify-between p-4 bg-base-200 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">💳</div>
+                      <CreditCard className="w-6 h-6 text-accent" />
                       <div>
                         <p className="font-mono font-semibold">{card.cardUid}</p>
                         <p className="text-xs text-base-content/60">
@@ -175,15 +178,19 @@ export default function PairCardPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {card.isActive ? (
-                        <span className="badge badge-success">Active</span>
+                        <span className="badge badge-success flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Active
+                        </span>
                       ) : (
-                        <span className="badge badge-ghost">Inactive</span>
+                        <span className="badge badge-ghost flex items-center gap-1">
+                          <XCircle className="w-3 h-3" /> Inactive
+                        </span>
                       )}
                       <button
                         onClick={() => revokeCard(card.id)}
                         className="btn btn-error btn-xs"
                       >
-                        Remove
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
@@ -196,20 +203,41 @@ export default function PairCardPage() {
         {/* Pairing Section */}
         <div className="card bg-base-100 shadow-lg border border-base-300">
           <div className="card-body">
-            <h2 className="card-title text-lg mb-4">📱 Pair New Card</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <Smartphone className="w-5 h-5" />
+              <h2 className="card-title text-lg">Pair New Card</h2>
+            </div>
             
             {!pairingToken ? (
               <div className="text-center py-8">
-                <div className="text-6xl mb-4">📱💳</div>
+                <div className="flex justify-center mb-4">
+                  <Smartphone className="w-16 h-16 text-accent" />
+                  <CreditCard className="w-12 h-12 text-accent -ml-4" />
+                </div>
                 <p className="text-base-content/70 mb-6">
                   Generate a pairing code and scan it at any cabinet to link your NFC card.
                 </p>
                 <ol className="text-left text-sm text-base-content/60 mb-6 space-y-2 max-w-md mx-auto">
-                  <li>1. Click "Generate Pairing Code" below</li>
-                  <li>2. Go to any Smart Cabinet</li>
-                  <li>3. Scan the QR code displayed on your phone</li>
-                  <li>4. Tap your NFC card on the reader</li>
-                  <li>5. Done! Your card is now linked</li>
+                  <li className="flex items-center gap-2">
+                    <span className="bg-accent text-accent-content rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
+                    Click "Generate Pairing Code" below
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="bg-accent text-accent-content rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
+                    Go to any Smart Cabinet
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="bg-accent text-accent-content rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                    Scan the QR code displayed on your phone
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="bg-accent text-accent-content rounded-full w-5 h-5 flex items-center justify-center text-xs">4</span>
+                    Tap your NFC card on the reader
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="bg-accent text-accent-content rounded-full w-5 h-5 flex items-center justify-center text-xs">5</span>
+                    Done! Your card is now linked
+                  </li>
                 </ol>
                 
                 <button
@@ -223,7 +251,10 @@ export default function PairCardPage() {
                       Generating...
                     </>
                   ) : (
-                    '🔄 Generate Pairing Code'
+                    <>
+                      <QrCode className="w-5 h-5 mr-2" />
+                      Generate Pairing Code
+                    </>
                   )}
                 </button>
               </div>
@@ -257,7 +288,7 @@ export default function PairCardPage() {
                     disabled={generating}
                     className="btn btn-accent"
                   >
-                    🔄 Regenerate
+                    <QrCode className="w-4 h-4 mr-1" /> Regenerate
                   </button>
                   <button
                     onClick={() => setPairingToken(null)}
@@ -273,7 +304,8 @@ export default function PairCardPage() {
 
         {/* Tips */}
         <div className="mt-8 alert alert-info">
-          <span>💡 Tip: You can link multiple NFC cards to your account. Each card can be used at any cabinet.</span>
+          <CreditCard className="w-5 h-5" />
+          <span>Tip: You can link multiple NFC cards to your account. Each card can be used at any cabinet.</span>
         </div>
       </div>
     </main>
