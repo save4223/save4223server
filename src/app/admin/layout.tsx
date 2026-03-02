@@ -2,17 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Users, ClipboardList, Wrench, Settings, ArrowLeft, User } from 'lucide-react'
 
 interface NavItem {
   href: string
   label: string
-  icon: string
+  icon: React.ReactNode
 }
 
 const navItems: NavItem[] = [
-  { href: '/admin/users', label: 'Users', icon: '👥' },
-  { href: '/admin/tool-types', label: 'Tool Types', icon: '📋' },
-  { href: '/admin/tools', label: 'Tools', icon: '🔧' },
+  { href: '/admin/users', label: 'Users', icon: <Users className="w-4 h-4" /> },
+  { href: '/admin/tool-types', label: 'Tool Types', icon: <ClipboardList className="w-4 h-4" /> },
+  { href: '/admin/tools', label: 'Tools', icon: <Wrench className="w-4 h-4" /> },
 ]
 
 export default function AdminLayout({
@@ -30,13 +31,16 @@ export default function AdminLayout({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/" className="btn btn-accent btn-sm">
-                ← Back to Home
+                <ArrowLeft className="w-4 h-4 mr-1" /> Back to Home
               </Link>
-              <h1 className="text-xl font-bold text-accent">⚙️ Admin Dashboard</h1>
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-accent" />
+                <h1 className="text-xl font-bold text-accent">Admin Dashboard</h1>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/user/profile" className="btn btn-ghost btn-sm">
-                👤 Profile
+                <User className="w-4 h-4 mr-1" /> Profile
               </Link>
             </div>
           </div>

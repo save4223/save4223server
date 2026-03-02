@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Package, ArrowLeft, Wrench, Zap, Box, AlertCircle, AlertTriangle } from 'lucide-react'
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type TransactionAction = 'BORROW' | 'RETURN' | 'MISSING_UNEXPECTED'
@@ -47,6 +49,15 @@ interface UserItemsData {
   recentTransactions: Transaction[]
 }
 
+function CategoryIcon({ category }: { category: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    TOOL: <Wrench className="w-4 h-4" />,
+    DEVICE: <Zap className="w-4 h-4" />,
+    CONSUMABLE: <Box className="w-4 h-4" />,
+  }
+  return icons[category] || <Package className="w-4 h-4" />
+}
+
 function StatusBadge({ status, dueAt }: { status: ItemStatus; dueAt: string | null }) {
   const isOverdue = dueAt && new Date(dueAt) < new Date()
   
@@ -67,15 +78,6 @@ function ActionBadge({ action }: { action: TransactionAction }) {
   }
   const config = configs[action]
   return <span className={`badge ${config.class}`}>{config.label}</span>
-}
-
-function CategoryIcon({ category }: { category: string }) {
-  const icons: Record<string, string> = {
-    TOOL: '🔧',
-    DEVICE: '🔌',
-    CONSUMABLE: '📦',
-  }
-  return <span>{icons[category] || '📎'}</span>
 }
 
 export default function UserItemsPage() {
@@ -121,7 +123,7 @@ export default function UserItemsPage() {
         <div className="flex h-screen items-center justify-center">
           <div className="card bg-base-200 shadow-xl">
             <div className="card-body items-center text-center">
-              <div className="text-4xl">⚠️</div>
+              <AlertCircle className="w-12 h-12 text-error mb-2" />
               <h2 className="card-title text-error">{error}</h2>
               <Link href="/login" className="btn btn-accent btn-sm mt-4">Sign In</Link>
             </div>
@@ -141,12 +143,12 @@ export default function UserItemsPage() {
         <div className="container mx-auto px-4 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <Link href="/" className="btn btn-ghost btn-sm w-fit">
-              ← Back
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Link>
             <div className="flex-1 flex items-center justify-between">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-accent">📋 My Items</h1>
-                <p className="text-accent/70 text-sm mt-1 hidden sm:block">View borrowed items and transaction history</p>
+              <div className="flex items-center gap-2">
+                <Package className="w-6 h-6 text-accent" />
+                <h1 className="text-xl sm:text-2xl font-bold text-accent">My Items</h1>
               </div>
               <Link href="/tools" className="btn btn-accent btn-sm">
                 Browse Tools
@@ -160,15 +162,16 @@ export default function UserItemsPage() {
         {/* Currently Held Items */}
         <section className="mb-10">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-bold text-base-content">📦 Currently Borrowed</h2>
+            <Package className="w-5 h-5" />
+            <h2 className="text-xl font-bold text-base-content">Currently Borrowed</h2>
             <span className="badge badge-accent">{heldItems.length}</span>
           </div>
 
           {heldItems.length === 0 ? (
             <div className="card bg-base-200">
               <div className="card-body items-center text-center py-12">
-                <div className="text-5xl">📭</div>
-                <p className="text-base-content/60 mt-4">No borrowed items</p>
+                <Package className="w-12 h-12 text-base-content/30 mb-4" />
+                <p className="text-base-content/60">No borrowed items</p>
                 <Link href="/tools" className="btn btn-accent btn-sm mt-4">Borrow Tools</Link>
               </div>
             </div>
@@ -209,7 +212,8 @@ export default function UserItemsPage() {
 
                       {isOverdue && (
                         <div className="alert alert-error alert-sm mt-4">
-                          <span>⚠️ Overdue! Please return soon!</span>
+                          <AlertTriangle className="w-4 h-4" />
+                          <span>Overdue! Please return soon!</span>
                         </div>
                       )}
                     </div>
@@ -223,15 +227,16 @@ export default function UserItemsPage() {
         {/* Recent Transactions */}
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-bold text-base-content">📜 Recent Transactions</h2>
+            <Package className="w-5 h-5" />
+            <h2 className="text-xl font-bold text-base-content">Recent Transactions</h2>
             <span className="badge badge-neutral">Last 5</span>
           </div>
 
           {transactions.length === 0 ? (
             <div className="card bg-base-200">
               <div className="card-body items-center text-center py-12">
-                <div className="text-5xl">📭</div>
-                <p className="text-base-content/60 mt-4">No transactions yet</p>
+                <Package className="w-12 h-12 text-base-content/30 mb-4" />
+                <p className="text-base-content/60">No transactions yet</p>
               </div>
             </div>
           ) : (
