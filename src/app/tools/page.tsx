@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
+import { Wrench, Package, Zap, Box, Search, ArrowLeft } from 'lucide-react'
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type Category = 'ALL' | 'TOOL' | 'DEVICE' | 'CONSUMABLE'
@@ -26,11 +27,11 @@ interface ToolType {
   items: ToolItem[]
 }
 
-const CATEGORIES: { key: Category; label: string; icon: string }[] = [
-  { key: 'ALL', label: 'All', icon: '🔍' },
-  { key: 'TOOL', label: 'Tools', icon: '🔧' },
-  { key: 'DEVICE', label: 'Devices', icon: '🔌' },
-  { key: 'CONSUMABLE', label: 'Consumables', icon: '📦' },
+const CATEGORIES: { key: Category; label: string; icon: React.ReactNode }[] = [
+  { key: 'ALL', label: 'All', icon: <Search className="w-4 h-4" /> },
+  { key: 'TOOL', label: 'Tools', icon: <Wrench className="w-4 h-4" /> },
+  { key: 'DEVICE', label: 'Devices', icon: <Zap className="w-4 h-4" /> },
+  { key: 'CONSUMABLE', label: 'Consumables', icon: <Box className="w-4 h-4" /> },
 ]
 
 function StatusBadge({ status, dueAt }: { status: ItemStatus; dueAt: string | null }) {
@@ -46,12 +47,16 @@ function StatusBadge({ status, dueAt }: { status: ItemStatus; dueAt: string | nu
 }
 
 function CategoryBadge({ category }: { category: string }) {
-  const icons: Record<string, string> = { TOOL: '🔧', DEVICE: '🔌', CONSUMABLE: '📦' }
+  const icons: Record<string, React.ReactNode> = { 
+    TOOL: <Wrench className="w-3 h-3 mr-1" />, 
+    DEVICE: <Zap className="w-3 h-3 mr-1" />, 
+    CONSUMABLE: <Box className="w-3 h-3 mr-1" /> 
+  }
   const labels: Record<string, string> = { TOOL: 'Tool', DEVICE: 'Device', CONSUMABLE: 'Consumable' }
   
   return (
-    <span className="badge badge-ghost">
-      <span className="mr-1">{icons[category] || '📎'}</span>
+    <span className="badge badge-ghost flex items-center">
+      {icons[category] || <Package className="w-3 h-3 mr-1" />}
       {labels[category] || category}
     </span>
   )
@@ -150,11 +155,11 @@ export default function ToolsGalleryPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
               <Link href="/" className="btn btn-ghost btn-sm">
-                ← Back
+                <ArrowLeft className="w-4 h-4 mr-1" /> Back
               </Link>
-              <div className="flex-1">
-                <h1 className="text-xl sm:text-2xl font-bold text-accent">🔧 Tool Library</h1>
-                <p className="text-accent/70 text-sm mt-1 hidden sm:block">{stats.totalTypes} types · {stats.totalItems} items · {stats.availableItems} available</p>
+              <div className="flex-1 flex items-center gap-2">
+                <Wrench className="w-6 h-6 text-accent" />
+                <h1 className="text-xl sm:text-2xl font-bold text-accent">Tool Library</h1>
               </div>
             </div>
             <div className="flex gap-2 sm:justify-end">
@@ -165,12 +170,13 @@ export default function ToolsGalleryPage() {
 
           {/* Search */}
           <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/50" />
             <input
               type="text"
               placeholder="Search by name, description, location, or RFID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input input-bordered w-full bg-base-100"
+              className="input input-bordered w-full bg-base-100 pl-10"
             />
           </div>
 
@@ -195,7 +201,7 @@ export default function ToolsGalleryPage() {
         {filteredTools.length === 0 ? (
           <div className="card bg-base-200">
             <div className="card-body items-center text-center py-20">
-              <div className="text-6xl">🔍</div>
+              <Search className="w-16 h-16 text-base-content/30 mb-4" />
               <h3 className="text-xl font-bold mt-4">{tools.length === 0 ? 'No Tools Available' : 'No Matching Tools'}</h3>
               <p className="text-base-content/60 mt-2">{tools.length === 0 ? 'Please add tool types and items first' : 'Try adjusting your search or filter'}</p>
               {tools.length > 0 && (
@@ -221,10 +227,10 @@ export default function ToolsGalleryPage() {
                         {tool.imageUrl ? (
                           <img src={tool.imageUrl} alt={tool.name} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-4xl">
-                            {tool.category === 'TOOL' && '🔧'}
-                            {tool.category === 'DEVICE' && '🔌'}
-                            {tool.category === 'CONSUMABLE' && '📦'}
+                          <div className="flex h-full w-full items-center justify-center">
+                            {tool.category === 'TOOL' && <Wrench className="w-10 h-10 text-base-content/30" />}
+                            {tool.category === 'DEVICE' && <Zap className="w-10 h-10 text-base-content/30" />}
+                            {tool.category === 'CONSUMABLE' && <Box className="w-10 h-10 text-base-content/30" />}
                           </div>
                         )}
                       </div>

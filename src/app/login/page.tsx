@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Wrench, ArrowLeft, Mail, Lock } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -57,7 +58,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-base-100">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-base-100 p-8 shadow-lg border border-base-300">
         <div className="text-center">
-          <div className="text-4xl mb-4">🔧</div>
+          <div className="flex justify-center mb-4">
+            <Wrench className="w-10 h-10 text-accent" />
+          </div>
           <h1 className="text-3xl font-bold text-accent">Smart Lab Inventory</h1>
           <p className="mt-2 text-base-content/70">Sign in to your account or create a new one</p>
         </div>
@@ -66,7 +69,9 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div className="form-control">
               <label htmlFor="email" className="label">
-                <span className="label-text">Email address</span>
+                <span className="label-text flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> Email address
+                </span>
               </label>
               <input
                 id="email"
@@ -81,7 +86,9 @@ export default function LoginPage() {
 
             <div className="form-control">
               <label htmlFor="password" className="label">
-                <span className="label-text">Password</span>
+                <span className="label-text flex items-center gap-2">
+                  <Lock className="w-4 h-4" /> Password
+                </span>
               </label>
               <input
                 id="password"
@@ -125,7 +132,7 @@ export default function LoginPage() {
 
         <div className="text-center mt-6">
           <Link href="/" className="btn btn-ghost btn-sm">
-            ← Back to Home
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Home
           </Link>
         </div>
       </div>

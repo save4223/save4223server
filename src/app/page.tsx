@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { itemTypes, items } from '@/db/schema'
 import { sql } from 'drizzle-orm'
+import { Wrench, Package, CheckCircle, ClipboardList, LayoutDashboard, User } from 'lucide-react'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -32,15 +33,16 @@ export default async function Home() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-12 text-center">
-          <h1 className="mb-4 text-4xl font-bold text-accent">
-            🔧 Smart Lab Inventory
-          </h1>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Wrench className="w-10 h-10 text-accent" />
+            <h1 className="text-4xl font-bold text-accent">Smart Lab Inventory</h1>
+          </div>
           <p className="mb-8 text-xl text-base-content/70">Smart Lab Tool Management System</p>
 
           {user ? (
             <div className="flex items-center justify-center gap-4">
               <span className="badge badge-success badge-lg">
-                ✅ {user.email}
+                {user.email}
               </span>
               <form action={signOut}>
                 <button
@@ -68,7 +70,7 @@ export default async function Home() {
             className="card bg-base-100 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-base-300"
           >
             <div className="card-body items-center text-center">
-              <div className="text-4xl mb-4">🔧</div>
+              <Wrench className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">
                 {stats[0]?.totalTypes || 0}
               </div>
@@ -84,7 +86,7 @@ export default async function Home() {
             className="card bg-base-100 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-base-300"
           >
             <div className="card-body items-center text-center">
-              <div className="text-4xl mb-4">📦</div>
+              <Package className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">
                 {stats[0]?.totalItems || 0}
               </div>
@@ -100,7 +102,7 @@ export default async function Home() {
             className="card bg-base-100 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-base-300"
           >
             <div className="card-body items-center text-center">
-              <div className="text-4xl mb-4">✅</div>
+              <CheckCircle className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">
                 {stats[0]?.availableItems || 0}
               </div>
@@ -119,8 +121,8 @@ export default async function Home() {
             className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
           >
             <div className="card-body flex flex-row items-center">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-primary text-3xl">
-                🔧
+              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-primary">
+                <Wrench className="w-8 h-8 text-primary-content" />
               </div>
               <div className="ml-6">
                 <h2 className="card-title text-xl">Tool Library</h2>
@@ -136,8 +138,8 @@ export default async function Home() {
             className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
           >
             <div className="card-body flex flex-row items-center">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-3xl">
-                📋
+              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-secondary">
+                <ClipboardList className="w-8 h-8 text-secondary-content" />
               </div>
               <div className="ml-6">
                 <h2 className="card-title text-xl">Tool Types</h2>
@@ -153,8 +155,8 @@ export default async function Home() {
             className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
           >
             <div className="card-body flex flex-row items-center">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-info text-3xl">
-                📊
+              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-info">
+                <LayoutDashboard className="w-8 h-8 text-info-content" />
               </div>
               <div className="ml-6">
                 <h2 className="card-title text-xl">My Items</h2>
@@ -163,23 +165,19 @@ export default async function Home() {
             </div>
           </Link>
 
-          
-
           <Link
             href="/user/profile"
             className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
           >
-            <div className="card bg-base-100 shadow-md border border-base-300">
             <div className="card-body flex flex-row items-center">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-neutral text-3xl">
-                👤
+              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-neutral">
+                <User className="w-8 h-8 text-neutral-content" />
               </div>
               <div className="ml-6">
                 <h2 className="card-title text-xl">Profile</h2>
                 <p className="mt-2 text-base-content/70">Manage your account settings</p>
               </div>
             </div>
-          </div>
           </Link>
         </div>
 
