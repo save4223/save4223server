@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Users, ArrowLeft, Plus, Trash2, AlertTriangle, CheckCircle, User, Shield, Star, AlertCircle, X, RefreshCw, Search, Crown } from 'lucide-react'
 
 interface User {
   id: string
@@ -30,15 +31,16 @@ interface OrphanedItem {
 
 function RoleBadge({ role }: { role: string }) {
   const configs = {
-    ADMIN: { class: 'badge-error', icon: '👑' },
-    MANAGER: { class: 'badge-warning', icon: '⭐' },
-    USER: { class: 'badge-ghost', icon: '👤' },
+    ADMIN: { class: 'badge-error', icon: <Crown className="w-3 h-3" />, label: 'Admin' },
+    MANAGER: { class: 'badge-warning', icon: <Star className="w-3 h-3" />, label: 'Manager' },
+    USER: { class: 'badge-ghost', icon: <User className="w-3 h-3" />, label: 'User' },
   }
   const config = configs[role as keyof typeof configs] || configs.USER
   
   return (
-    <span className={`badge ${config.class} badge-sm`}>
-      {config.icon} {role}
+    <span className={`badge ${config.class} badge-sm flex items-center gap-1`}>
+      {config.icon}
+      {config.label}
     </span>
   )
 }
@@ -184,33 +186,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function handleInvite(e: React.FormEvent) {
-    e.preventDefault()
-    setInviting(true)
-    
-    try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
-      })
-
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Failed to invite')
-      }
-
-      setShowInviteModal(false)
-      setInviteEmail('')
-      setInviteRole('USER')
-      fetchUsers() // Refresh list
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to invite')
-    } finally {
-      setInviting(false)
-    }
-  }
-
   async function previewCleanup() {
     try {
       const res = await fetch('/api/admin/cleanup-orphaned-users')
@@ -242,6 +217,33 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault()
+    setInviting(true)
+    
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to invite')
+      }
+
+      setShowInviteModal(false)
+      setInviteEmail('')
+      setInviteRole('USER')
+      fetchUsers() // Refresh list
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to invite')
+    } finally {
+      setInviting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -254,7 +256,7 @@ export default function AdminUsersPage() {
     return (
       <div className="card bg-base-200">
         <div className="card-body items-center text-center py-12">
-          <div className="text-4xl">⚠️</div>
+          <AlertCircle className="w-12 h-12 text-error mb-2" />
           <h2 className="card-title text-error">{error}</h2>
           <button onClick={fetchUsers} className="btn btn-accent btn-sm mt-4">Retry</button>
         </div>
@@ -268,16 +270,20 @@ export default function AdminUsersPage() {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Link href="/admin" className="btn btn-ghost btn-sm w-fit">
-            ← Back to Admin
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Admin
           </Link>
           <div className="flex-1 flex items-center justify-between">
-            <h2 className="text-xl sm:text-2xl font-bold">👥 User Management</h2>
+            <div className="flex items-center gap-2">
+              <Users className="w-6 h-6" />
+              <h2 className="text-xl sm:text-2xl font-bold">User Management</h2>
+            </div>
             <button 
               onClick={() => setShowInviteModal(true)}
               className="btn btn-accent btn-sm sm:btn-md"
             >
-              <span className="hidden sm:inline">+ Invite User</span>
-              <span className="sm:hidden">+ Invite</span>
+              <Plus className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">Invite User</span>
+              <span className="sm:hidden">Invite</span>
             </button>
           </div>
         </div>
@@ -288,7 +294,7 @@ export default function AdminUsersPage() {
             onClick={previewCleanup}
             className="btn btn-warning btn-sm"
           >
-            🧹 Cleanup Orphaned Users
+            <RefreshCw className="w-4 h-4 mr-1" /> Cleanup Orphaned Users
           </button>
         </div>
       </div>
@@ -313,9 +319,7 @@ export default function AdminUsersPage() {
                     <div className="flex items-center gap-3">
                       <div className="avatar placeholder">
                         <div className="bg-accent text-accent-content rounded-full w-10 h-10 flex items-center justify-center">
-                          <span className="text-sm font-bold">
-                            {(user.fullName || user.email)[0].toUpperCase()}
-                          </span>
+                          <User className="w-5 h-5" />
                         </div>
                       </div>
                       <div>
@@ -340,7 +344,7 @@ export default function AdminUsersPage() {
                       onClick={() => initiateDelete(user)}
                       className="btn btn-error btn-xs"
                     >
-                      🗑️
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
@@ -353,14 +357,14 @@ export default function AdminUsersPage() {
       {users.length === 0 && (
         <div className="card bg-base-200 mt-8">
           <div className="card-body items-center text-center py-12">
-            <div className="text-6xl">👥</div>
+            <Users className="w-16 h-16 text-base-content/30 mb-4" />
             <h3 className="text-xl font-bold mt-4">No Users</h3>
             <p className="text-base-content/60 mt-2">Invite your first user to get started</p>
             <button 
               onClick={() => setShowInviteModal(true)}
               className="btn btn-accent mt-4"
             >
-              + Invite User
+              <Plus className="w-4 h-4 mr-1" /> Invite User
             </button>
           </div>
         </div>
@@ -371,7 +375,10 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="card bg-base-100 w-full max-w-md">
             <form onSubmit={handleInvite} className="card-body">
-              <h3 className="card-title mb-4">📧 Invite New User</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <Plus className="w-6 h-6" />
+                <h3 className="card-title">Invite New User</h3>
+              </div>
               
               <div className="form-control mb-4">
                 <label className="label">
@@ -396,9 +403,9 @@ export default function AdminUsersPage() {
                   onChange={(e) => setInviteRole(e.target.value)}
                   className="select select-bordered w-full"
                 >
-                  <option value="USER">👤 User</option>
-                  <option value="MANAGER">⭐ Manager</option>
-                  <option value="ADMIN">👑 Admin</option>
+                  <option value="USER">User</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="ADMIN">Admin</option>
                 </select>
               </div>
 
@@ -435,7 +442,10 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="card bg-base-100 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="card-body">
-              <h3 className="card-title text-error mb-4">🗑️ Delete User</h3>
+              <div className="flex items-center gap-2 mb-4 text-error">
+                <Trash2 className="w-6 h-6" />
+                <h3 className="card-title">Delete User</h3>
+              </div>
               
               <p className="mb-4">
                 Are you sure you want to delete <strong>{deletingUser.fullName || deletingUser.email}</strong>?
@@ -449,7 +459,10 @@ export default function AdminUsersPage() {
               ) : borrowedItems.length > 0 ? (
                 <div className="alert alert-warning mb-4">
                   <div>
-                    <p className="font-semibold">⚠️ This user has {borrowedItems.length} borrowed item(s):</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      <p className="font-semibold">This user has {borrowedItems.length} borrowed item(s):</p>
+                    </div>
                     <ul className="mt-2 text-sm space-y-1">
                       {borrowedItems.map(item => (
                         <li key={item.id} className="font-mono">{item.rfidTag}</li>
@@ -462,7 +475,10 @@ export default function AdminUsersPage() {
                 </div>
               ) : (
                 <div className="alert alert-success mb-4">
-                  <span>✅ This user has no borrowed items.</span>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5" />
+                    <span>This user has no borrowed items.</span>
+                  </div>
                 </div>
               )}
 
@@ -480,7 +496,10 @@ export default function AdminUsersPage() {
                           Deleting...
                         </>
                       ) : (
-                        '⚠️ Force Delete'
+                        <>
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Force Delete
+                        </>
                       )}
                     </button>
                     <button
@@ -530,7 +549,10 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="card bg-base-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="card-body">
-              <h3 className="card-title text-warning mb-4">🧹 Cleanup Orphaned Users</h3>
+              <div className="flex items-center gap-2 mb-4 text-warning">
+                <RefreshCw className="w-6 h-6" />
+                <h3 className="card-title">Cleanup Orphaned Users</h3>
+              </div>
               
               {!cleanupPreview ? (
                 <div className="flex items-center justify-center py-8">
@@ -538,19 +560,25 @@ export default function AdminUsersPage() {
                 </div>
               ) : cleanupPreview.orphanedCount === 0 ? (
                 <div className="alert alert-success">
-                  <span>✅ No orphaned users found. All profiles have valid auth users.</span>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5" />
+                    <span>No orphaned users found. All profiles have valid auth users.</span>
+                  </div>
                 </div>
               ) : (
                 <>
                   <div className="alert alert-warning mb-4">
                     <div>
-                      <p className="font-semibold">Found {cleanupPreview.orphanedCount} orphaned user(s)</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-5 h-5" />
+                        <p className="font-semibold">Found {cleanupPreview.orphanedCount} orphaned user(s)</p>
+                      </div>
                       <p className="text-sm mt-1">
                         These profiles exist in the database but have no corresponding auth user.
                       </p>
                       {cleanupPreview.borrowedItemsCount > 0 && (
                         <p className="text-sm mt-2 font-semibold">
-                          ⚠️ {cleanupPreview.borrowedItemsCount} borrowed item(s) will be reset to AVAILABLE
+                          {cleanupPreview.borrowedItemsCount} borrowed item(s) will be reset to AVAILABLE
                         </p>
                       )}
                     </div>
@@ -591,7 +619,10 @@ export default function AdminUsersPage() {
                           Cleaning...
                         </>
                       ) : (
-                        'Execute Cleanup'
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                          Execute Cleanup
+                        </>
                       )}
                     </button>
                     <button
