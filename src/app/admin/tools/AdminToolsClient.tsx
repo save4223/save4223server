@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, Plus, Search, Trash2, Pencil, Wrench } from 'lucide-react'
 
 interface Tool {
   id: string
@@ -54,7 +55,7 @@ function DeleteButton({ id, name, onDelete }: { id: string; name: string; onDele
       {deleting ? (
         <span className="loading loading-spinner loading-xs"></span>
       ) : (
-        '🗑️'
+        <Trash2 className="w-4 h-4" />
       )}
     </button>
   )
@@ -81,25 +82,27 @@ export default function AdminToolsClient({ tools: initialTools, toolTypes }: Adm
       {/* Mobile-friendly header with back button */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <Link href="/admin" className="btn btn-ghost btn-sm w-fit">
-          ← Back to Admin
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to Admin
         </Link>
         <div className="flex-1 flex items-center justify-between">
           <h2 className="text-xl sm:text-2xl font-bold">Manage Tools</h2>
           <Link href="/admin/tools/new" className="btn btn-accent btn-sm sm:btn-md">
-            <span className="hidden sm:inline">+ Add New Tool</span>
-            <span className="sm:hidden">+ New</span>
+            <Plus className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">Add New Tool</span>
+            <span className="sm:hidden">New</span>
           </Link>
         </div>
       </div>
 
       {/* Filter - full width on mobile */}
-      <div className="mb-4">
+      <div className="mb-4 relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/50" />
         <input
           type="text"
           placeholder="Search by RFID, type, or location..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="input input-bordered w-full"
+          className="input input-bordered w-full pl-10"
         />
       </div>
 
@@ -141,7 +144,7 @@ export default function AdminToolsClient({ tools: initialTools, toolTypes }: Adm
                         href={`/admin/tools/${tool.id}/edit`}
                         className="btn btn-warning btn-xs"
                       >
-                        ✏️
+                        <Pencil className="w-4 h-4" />
                       </Link>
                       <DeleteButton 
                         id={tool.id} 
@@ -160,14 +163,14 @@ export default function AdminToolsClient({ tools: initialTools, toolTypes }: Adm
       {filteredTools.length === 0 && (
         <div className="card bg-base-200 mt-8">
           <div className="card-body items-center text-center py-12">
-            <div className="text-6xl">🔧</div>
+            <Wrench className="w-16 h-16 text-base-content/30 mb-4" />
             <h3 className="text-xl font-bold mt-4">{tools.length === 0 ? 'No Tools' : 'No Matching Tools'}</h3>
             <p className="text-base-content/60 mt-2">
               {tools.length === 0 ? 'Add your first tool to get started' : 'Try adjusting your search'}
             </p>
             {tools.length === 0 && (
               <Link href="/admin/tools/new" className="btn btn-accent mt-4">
-                + Add New Tool
+                <Plus className="w-4 h-4 mr-1" /> Add New Tool
               </Link>
             )}
           </div>

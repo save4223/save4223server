@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, Plus, Trash2, Pencil, Wrench, Zap, Box, Package } from 'lucide-react'
 
 interface ToolType {
   id: number
@@ -14,6 +15,15 @@ interface ToolType {
 
 interface AdminToolTypesClientProps {
   types: ToolType[]
+}
+
+function CategoryIcon({ category }: { category: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    TOOL: <Wrench className="w-5 h-5" />,
+    DEVICE: <Zap className="w-5 h-5" />,
+    CONSUMABLE: <Box className="w-5 h-5" />,
+  }
+  return icons[category] || <Package className="w-5 h-5" />
 }
 
 function DeleteButton({ id, name, onDelete }: { id: number; name: string; onDelete: () => void }) {
@@ -51,7 +61,10 @@ function DeleteButton({ id, name, onDelete }: { id: number; name: string; onDele
       {deleting ? (
         <span className="loading loading-spinner loading-xs"></span>
       ) : (
-        '🗑️ Delete'
+        <>
+          <Trash2 className="w-4 h-4 mr-1" />
+          <span className="hidden sm:inline">Delete</span>
+        </>
       )}
     </button>
   )
@@ -68,16 +81,15 @@ export default function AdminToolTypesClient({ types: initialTypes }: AdminToolT
 
   return (
     <div>
-      {/* Mobile-friendly header with back button */}
+      {/* Header with back button */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <Link href="/admin" className="btn btn-ghost btn-sm w-fit">
-          ← Back to Admin
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to Admin
         </Link>
         <div className="flex-1 flex items-center justify-between">
           <h2 className="text-xl sm:text-2xl font-bold">Manage Tool Types</h2>
-          <Link href="/admin/tool-types/new" className="btn btn-accent btn-sm sm:btn-md">
-            <span className="hidden sm:inline">+ Create New Type</span>
-            <span className="sm:hidden">+ New</span>
+          <Link href="/admin/tool-types/new" className="btn btn-accent">
+            <Plus className="w-4 h-4 mr-1" /> Create New Type
           </Link>
         </div>
       </div>
@@ -87,41 +99,37 @@ export default function AdminToolTypesClient({ types: initialTypes }: AdminToolT
           <table className="table table-zebra">
             <thead className="bg-base-200">
               <tr>
-                <th className="hidden sm:table-cell">ID</th>
+                <th>ID</th>
                 <th>Image</th>
                 <th>Name</th>
-                <th className="hidden md:table-cell">Category</th>
-                <th className="hidden lg:table-cell">Max Duration</th>
-                <th className="w-48">Actions</th>
+                <th>Category</th>
+                <th>Max Duration</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {types.map((type) => (
                 <tr key={type.id}>
-                  <td className="hidden sm:table-cell">{type.id}</td>
+                  <td>{type.id}</td>
                   <td>
-                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg overflow-hidden bg-base-200 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-lg overflow-hidden bg-base-200 flex items-center justify-center">
                       {type.imageUrl ? (
                         <img src={type.imageUrl} alt={type.name} className="h-full w-full object-cover" />
                       ) : (
-                        <span className="text-lg sm:text-xl">
-                          {type.category === 'TOOL' && '🔧'}
-                          {type.category === 'DEVICE' && '🔌'}
-                          {type.category === 'CONSUMABLE' && '📦'}
-                        </span>
+                        <CategoryIcon category={type.category} />
                       )}
                     </div>
                   </td>
                   <td className="font-semibold">{type.name}</td>
-                  <td className="hidden md:table-cell"><span className="badge badge-ghost">{type.category}</span></td>
-                  <td className="hidden lg:table-cell">{type.maxBorrowDuration || '7 days'}</td>
+                  <td><span className="badge badge-ghost">{type.category}</span></td>
+                  <td>{type.maxBorrowDuration || '7 days'}</td>
                   <td>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex gap-2">
                       <Link 
                         href={`/admin/tool-types/${type.id}/edit`}
-                        className="btn btn-warning btn-xs sm:btn-sm"
+                        className="btn btn-warning btn-sm"
                       >
-                        ✏️ <span className="hidden sm:inline">Edit</span>
+                        <Pencil className="w-4 h-4 mr-1" /> Edit
                       </Link>
                       <DeleteButton 
                         id={type.id} 
@@ -140,11 +148,11 @@ export default function AdminToolTypesClient({ types: initialTypes }: AdminToolT
       {types.length === 0 && (
         <div className="card bg-base-200 mt-8">
           <div className="card-body items-center text-center py-12">
-            <div className="text-6xl">📦</div>
+            <Package className="w-16 h-16 text-base-content/30 mb-4" />
             <h3 className="text-xl font-bold mt-4">No Tool Types</h3>
             <p className="text-base-content/60 mt-2">Create your first tool type to get started</p>
             <Link href="/admin/tool-types/new" className="btn btn-accent mt-4">
-              + Create New Type
+              <Plus className="w-4 h-4 mr-1" /> Create New Type
             </Link>
           </div>
         </div>
