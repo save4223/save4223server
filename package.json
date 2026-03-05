@@ -19,7 +19,10 @@
     "db:stop": "supabase stop",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "test:recommendations": "npx tsx src/test/recommendations/test-runner.ts",
+    "test:recommendations:fast": "npx tsx src/test/recommendations/test-runner.ts --skip-llm",
+    "test:recommendations:verbose": "npx tsx src/test/recommendations/test-runner.ts --verbose"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -47,6 +50,7 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.19.0",
     "typescript": "^5"
   }
 }
