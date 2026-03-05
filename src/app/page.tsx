@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { itemTypes, items } from '@/db/schema'
 import { sql } from 'drizzle-orm'
-import { Wrench, Package, CheckCircle, ClipboardList, LayoutDashboard, User } from 'lucide-react'
+import { Wrench, Package, CheckCircle, ClipboardList, LayoutDashboard, User, Sparkles } from 'lucide-react'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -115,7 +115,27 @@ export default async function Home() {
         </div>
 
         {/* Feature Modules */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Link
+            href="/user/assistant"
+            className="card bg-gradient-to-br from-accent/10 to-accent/5 shadow-md hover:shadow-lg transition-all border border-accent/20 md:col-span-2 lg:col-span-3"
+          >
+            <div className="card-body flex flex-row items-center">
+              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-accent">
+                <Sparkles className="w-8 h-8 text-accent-content" />
+              </div>
+              <div className="ml-6">
+                <h2 className="card-title text-xl text-accent">AI Project Assistant</h2>
+                <p className="mt-2 text-base-content/70">
+                  Describe your project and get personalized tool recommendations from our inventory
+                </p>
+              </div>
+              <div className="ml-auto">
+                <span className="badge badge-accent">NEW</span>
+              </div>
+            </div>
+          </Link>
+
           <Link
             href="/tools"
             className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
