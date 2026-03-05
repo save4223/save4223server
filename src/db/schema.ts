@@ -1,4 +1,22 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, uuid, integer, jsonb, interval, pgEnum } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, text, timestamp, boolean, uuid, integer, jsonb, interval, pgEnum, customType, index } from 'drizzle-orm/pg-core'
+
+// Custom vector type for pgvector extension
+const vector = customType<{
+  data: number[]
+  driverData: string
+  config: { dimensions: number }
+}>({
+  dataType(config) {
+    return `vector(${config?.dimensions ?? 3072})`
+  },
+  fromDriver(value: string): number[] {
+    // Parse PostgreSQL vector string format: "[1,2,3]" to array
+    return JSON.parse(value.replace(/^\[|\]$/g, (m) => (m === '[' ? '[' : ']')))
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`
+  },
+})
 
 // Enums
 export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'MANAGER', 'USER'])
@@ -57,16 +75,21 @@ export const userCards = pgTable('user_cards', {
 // 2.2 Inventory Definition
 
 // Item Types - SKU/Category Definitions
-export const itemTypes = pgTable('item_types', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 100 }).notNull(),
-  category: itemCategoryEnum('category'),
-  description: text('description'),
-  imageUrl: text('image_url'),
-  maxBorrowDuration: interval('max_borrow_duration').default('7 days'),
-  totalQuantity: integer('total_quantity').default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const itemTypes = pgTable(
+  'item_types',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 100 }).notNull(),
+    category: itemCategoryEnum('category'),
+    description: text('description'),
+    imageUrl: text('image_url'),
+    maxBorrowDuration: interval('max_borrow_duration').default('7 days'),
+    totalQuantity: integer('total_quantity').default(0),
+    embedding: vector('embedding', { dimensions: 3072 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops'))]
+)
 
 // Items - Individual physical instances
 export const items = pgTable('items', {
