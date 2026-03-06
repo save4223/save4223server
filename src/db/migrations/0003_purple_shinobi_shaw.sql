@@ -1,0 +1,1 @@
+ALTER TABLE "item_types" ALTER COLUMN "embedding" SET DATA TYPE vector(1024);

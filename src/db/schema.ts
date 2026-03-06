@@ -88,7 +88,7 @@ export const itemTypes = pgTable(
     imageUrl: text('image_url'),
     maxBorrowDuration: interval('max_borrow_duration').default('7 days'),
     totalQuantity: integer('total_quantity').default(0),
-    embedding: vector('embedding', { dimensions: 3072 }),
+    embedding: vector('embedding', { dimensions: 1024 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index('embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops'))]

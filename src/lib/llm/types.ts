@@ -105,7 +105,7 @@ export function getLLMConfig(): LLMConfig {
     provider: (process.env.LLM_PROVIDER as LLMProviderType) || 'ollama',
     // Ollama defaults
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-    ollamaEmbedModel: process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text',
+    ollamaEmbedModel: process.env.OLLAMA_EMBED_MODEL || 'mxbai-embed-large',
     ollamaChatModel: process.env.OLLAMA_CHAT_MODEL || 'llama3.2',
     // OpenAI
     openaiApiKey: process.env.OPENAI_API_KEY,
