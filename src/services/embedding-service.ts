@@ -17,20 +17,42 @@ export interface EmbeddingProgress {
 
 /**
  * Generate a text representation of an item type for embedding
+ * Includes both English and Chinese text for multilingual search
  */
 function buildEmbeddingText(item: {
   name: string
+  nameCnSimplified: string | null
+  nameCnTraditional: string | null
   description: string | null
+  descriptionCn: string | null
   category: string | null
 }): string {
-  const parts = [item.name]
+  const parts: string[] = []
 
+  // English name (primary)
+  parts.push(item.name)
+
+  // Chinese names for multilingual search
+  if (item.nameCnSimplified) {
+    parts.push(`中文: ${item.nameCnSimplified}`)
+  }
+  if (item.nameCnTraditional && item.nameCnTraditional !== item.nameCnSimplified) {
+    parts.push(`繁體: ${item.nameCnTraditional}`)
+  }
+
+  // Category
   if (item.category) {
     parts.push(`Category: ${item.category}`)
   }
 
+  // English description
   if (item.description) {
     parts.push(item.description)
+  }
+
+  // Chinese description
+  if (item.descriptionCn) {
+    parts.push(item.descriptionCn)
   }
 
   return parts.join('. ')

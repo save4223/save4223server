@@ -80,8 +80,11 @@ export const itemTypes = pgTable(
   {
     id: serial('id').primaryKey(),
     name: varchar('name', { length: 100 }).notNull(),
+    nameCnSimplified: varchar('name_cn_simplified', { length: 100 }),
+    nameCnTraditional: varchar('name_cn_traditional', { length: 100 }),
     category: itemCategoryEnum('category'),
     description: text('description'),
+    descriptionCn: text('description_cn'),
     imageUrl: text('image_url'),
     maxBorrowDuration: interval('max_borrow_duration').default('7 days'),
     totalQuantity: integer('total_quantity').default(0),
