@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "../../node_modules/tailwindcss/index.css";
 @plugin "daisyui";
 
 @plugin "daisyui/theme" {
@@ -32,10 +32,16 @@
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
-  --depth: 1;
-  --noise: 1;
+  --depth: 0;
+  --noise: 0;
 }
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Remove shadows from buttons for crisp rendering */
+.btn {
+  box-shadow: none !important;
+  --tw-shadow: 0 0 #0000 !important;
 }

@@ -6,13 +6,13 @@ import { createClient } from '@/utils/supabase/server'
 import { ClipboardList, CheckCircle, Package, Wrench, Zap, Box, ArrowLeft, Pencil, Settings } from 'lucide-react'
 
 // Category icon mapping - same as tools page
-function CategoryIcon({ category }: { category: string }) {
+function CategoryIcon({ category }: { category: string | null }) {
   const icons: Record<string, React.ReactNode> = {
     TOOL: <Wrench className="w-10 h-10 text-base-content/30" />,
     DEVICE: <Zap className="w-10 h-10 text-base-content/30" />,
     CONSUMABLE: <Box className="w-10 h-10 text-base-content/30" />,
   }
-  return icons[category] || <Package className="w-10 h-10 text-base-content/30" />
+  return icons[category || ''] || <Package className="w-10 h-10 text-base-content/30" />
 }
 
 export default async function ToolTypesPage() {

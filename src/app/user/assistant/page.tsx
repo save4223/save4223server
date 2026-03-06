@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Sparkles, Send, Package, MapPin, AlertCircle, CheckCircle, Wrench, Loader2 } from 'lucide-react'
+import { ArrowLeft, Sparkles, Send, Package, MapPin, AlertCircle, CheckCircle, Wrench, Loader2, Search, BarChart3, MessageSquare } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 interface Tool {
   id: number
@@ -113,15 +114,105 @@ function ScoreBreakdown({ item }: { item: RankedItem }) {
   )
 }
 
+const PROGRESS_STEPS = [
+  {
+    icon: Search,
+    label: 'Searching tool database',
+    description: 'Finding semantically similar tools...',
+  },
+  {
+    icon: BarChart3,
+    label: 'Analyzing relevance',
+    description: 'Scoring availability, popularity, and fit...',
+  },
+  {
+    icon: MessageSquare,
+    label: 'Generating recommendations',
+    description: 'Creating personalized explanation...',
+  },
+] as const
+
+function ProgressIndicator({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 space-y-6">
+      {/* Step indicators */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {PROGRESS_STEPS.map((step, index) => {
+          const isActive = index === currentStep
+          const isCompleted = index < currentStep
+          const Icon = step.icon
+
+          return (
+            <div key={index} className="flex items-center">
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
+                  isActive
+                    ? 'bg-accent text-accent-content scale-110'
+                    : isCompleted
+                      ? 'bg-success text-success-content'
+                      : 'bg-base-300 text-base-content/40'
+                }`}
+              >
+                {isCompleted ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : isActive ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Icon className="w-5 h-5" />
+                )}
+              </div>
+              {index < PROGRESS_STEPS.length - 1 && (
+                <div
+                  className={`w-8 sm:w-16 h-1 mx-1 rounded transition-all duration-300 ${
+                    isCompleted ? 'bg-success' : 'bg-base-300'
+                  }`}
+                />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Current step label */}
+      <div className="text-center">
+        <p className="font-medium text-base-content">
+          {PROGRESS_STEPS[currentStep].label}
+        </p>
+        <p className="text-sm text-base-content/60 mt-1">
+          {PROGRESS_STEPS[currentStep].description}
+        </p>
+      </div>
+
+      {/* Animated dots */}
+      <div className="flex gap-1">
+        <span className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+    </div>
+  )
+}
+
 export default function AssistantPage() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<RecommendationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [progressStep, setProgressStep] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     inputRef.current?.focus()
+  }, [])
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+      }
+    }
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -135,6 +226,13 @@ export default function AssistantPage() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setProgressStep(0)
+
+    // Start progress animation timer
+    // Cycle through steps every 3 seconds, but don't go past the last step
+    progressTimerRef.current = setInterval(() => {
+      setProgressStep((prev) => (prev < PROGRESS_STEPS.length - 1 ? prev + 1 : prev))
+    }, 3000)
 
     try {
       const res = await fetch('/api/user/recommendations', {
@@ -153,6 +251,11 @@ export default function AssistantPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
+      // Stop progress timer
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+        progressTimerRef.current = null
+      }
       setLoading(false)
     }
   }
@@ -161,13 +264,14 @@ export default function AssistantPage() {
     setQuery('')
     setResult(null)
     setError(null)
+    setProgressStep(0)
     inputRef.current?.focus()
   }
 
   return (
     <main className="min-h-screen bg-base-100">
       {/* Header */}
-      <div className="bg-primary shadow-sm">
+      <div className="bg-primary border-b border-primary-content/10">
         <div className="container mx-auto px-4 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <Link href="/" className="btn btn-ghost btn-sm w-fit">
@@ -175,7 +279,7 @@ export default function AssistantPage() {
             </Link>
             <div className="flex-1 flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-accent" />
-              <h1 className="text-xl sm:text-2xl font-bold text-accent">AI Project Assistant</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-accent">AI Tool Recommender</h1>
             </div>
           </div>
         </div>
@@ -183,7 +287,7 @@ export default function AssistantPage() {
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Input Section */}
-        <div className="card bg-base-100 shadow-lg border border-base-300 mb-6">
+        <div className="card bg-base-100 border border-base-300 mb-6">
           <div className="card-body">
             <p className="text-base-content/70 mb-4">
               Describe your project and I'll recommend the best tools from our inventory.
@@ -214,24 +318,16 @@ export default function AssistantPage() {
                 </div>
               )}
 
-              <div className="flex gap-3 mt-4">
+              <div className="flex gap-3 mt-6">
                 <button
                   type="submit"
                   disabled={loading || !query.trim()}
-                  className="btn btn-accent flex-1"
+                  className="btn btn-accent flex-1 gap-2"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-1" />
-                      Get Recommendations
-                    </>
-                  )}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {loading ? 'Analyzing...' : 'Get Recommendations'}
                 </button>
+               
                 {result && (
                   <button type="button" onClick={handleReset} className="btn btn-ghost">
                     New Query
@@ -244,9 +340,10 @@ export default function AssistantPage() {
 
         {/* Results Section */}
         {loading && !result && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="w-12 h-12 text-accent animate-spin mb-4" />
-            <p className="text-base-content/60">Analyzing your project and finding the best tools...</p>
+          <div className="card bg-base-100 shadow-lg border border-base-300">
+            <div className="card-body">
+              <ProgressIndicator currentStep={progressStep} />
+            </div>
           </div>
         )}
 
@@ -259,10 +356,18 @@ export default function AssistantPage() {
                   <Sparkles className="w-5 h-5 text-accent" />
                   Recommendation
                 </h2>
-                <div className="prose prose-sm max-w-none">
-                  {result.explanation.split('\n').map((paragraph, i) => (
-                    <p key={i} className="mb-2 last:mb-0">{paragraph}</p>
-                  ))}
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                      li: ({ children }) => <li className="mb-1">{children}</li>,
+                      strong: ({ children }) => <strong className="font-semibold text-base-content">{children}</strong>,
+                    }}
+                  >
+                    {result.explanation}
+                  </ReactMarkdown>
                 </div>
               </div>
             </div>

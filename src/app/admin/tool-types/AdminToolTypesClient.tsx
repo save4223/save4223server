@@ -8,7 +8,7 @@ import { ArrowLeft, Plus, Trash2, Pencil, Wrench, Zap, Box, Package } from 'luci
 interface ToolType {
   id: number
   name: string
-  category: string
+  category: string | null
   maxBorrowDuration: string | null
   imageUrl: string | null
 }
@@ -17,13 +17,13 @@ interface AdminToolTypesClientProps {
   types: ToolType[]
 }
 
-function CategoryIcon({ category }: { category: string }) {
+function CategoryIcon({ category }: { category: string | null }) {
   const icons: Record<string, React.ReactNode> = {
     TOOL: <Wrench className="w-5 h-5" />,
     DEVICE: <Zap className="w-5 h-5" />,
     CONSUMABLE: <Box className="w-5 h-5" />,
   }
-  return icons[category] || <Package className="w-5 h-5" />
+  return icons[category || ''] || <Package className="w-5 h-5" />
 }
 
 function DeleteButton({ id, name, onDelete }: { id: number; name: string; onDelete: () => void }) {

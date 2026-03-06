@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Explicitly set Turbopack root to prevent workspace detection issues
+  turbopack: {
+    root: __dirname,
+  },
   // Allow Tailscale and other dev origins
   allowedDevOrigins: ['100.83.123.68', '*.tailscale.net', '*.ts.net'],
 }

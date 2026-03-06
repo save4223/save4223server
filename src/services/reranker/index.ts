@@ -61,9 +61,11 @@ export async function rerank(
   query: string,
   options: RerankOptions = {}
 ): Promise<RankedItem[]> {
-  const opts = { ...DEFAULT_OPTIONS, ...options }
-  if (options.weights) {
-    opts.weights = { ...DEFAULT_WEIGHTS, ...options.weights }
+  const weights: RerankWeights = { ...DEFAULT_WEIGHTS, ...options.weights }
+  const opts = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    weights,
   }
 
   // Step 1: Semantic search (vector retrieval)
