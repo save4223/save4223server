@@ -86,12 +86,12 @@ export async function updateEmbeddingForItemType(id: number): Promise<void> {
   // Convert array to PostgreSQL vector format
   const vectorStr = `[${embedding.join(',')}]`
 
-  await db
-    .update(itemTypes)
-    .set({
-      embedding: sql`'${vectorStr}'::vector`,
-    } as never)
-    .where(sql`id = ${id}`)
+  // Use raw SQL to properly cast the vector string
+  await db.execute(sql`
+    UPDATE item_types
+    SET embedding = '${sql.raw(vectorStr)}'::vector
+    WHERE id = ${id}
+  `)
 }
 
 /**
@@ -129,12 +129,12 @@ export async function generateMissingEmbeddings(
       // Convert array to PostgreSQL vector format
       const vectorStr = `[${result.embedding.join(',')}]`
 
-      await db
-        .update(itemTypes)
-        .set({
-          embedding: sql`'${vectorStr}'::vector`,
-        } as never)
-        .where(sql`id = ${item.id}`)
+      // Use raw SQL to properly cast the vector string
+      await db.execute(sql`
+        UPDATE item_types
+        SET embedding = '${sql.raw(vectorStr)}'::vector
+        WHERE id = ${item.id}
+      `)
 
       progress.processed++
     } catch (error) {
@@ -184,12 +184,12 @@ export async function regenerateAllEmbeddings(
       // Convert array to PostgreSQL vector format
       const vectorStr = `[${result.embedding.join(',')}]`
 
-      await db
-        .update(itemTypes)
-        .set({
-          embedding: sql`'${vectorStr}'::vector`,
-        } as never)
-        .where(sql`id = ${item.id}`)
+      // Use raw SQL to properly cast the vector string
+      await db.execute(sql`
+        UPDATE item_types
+        SET embedding = '${sql.raw(vectorStr)}'::vector
+        WHERE id = ${item.id}
+      `)
 
       progress.processed++
     } catch (error) {
