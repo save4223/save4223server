@@ -165,4 +165,9 @@ ON CONFLICT DO NOTHING;
 -- Update total_quantity to reflect actual inventory
 -- This can be adjusted based on actual stock levels
 
-RAISE NOTICE 'Item types seeded successfully! Run embedding generation next.';
+-- Success message (using DO block for RAISE NOTICE)
+DO $$
+BEGIN
+  RAISE NOTICE 'Item types seeded successfully! Run embedding generation next.';
+END
+$$;
