@@ -7,8 +7,11 @@ import Link from 'next/link'
 interface ToolType {
   id: number
   name: string
+  nameCnSimplified: string | null
+  nameCnTraditional: string | null
   category: string
   description: string | null
+  descriptionCn: string | null
   maxBorrowDuration: string | null
   imageUrl: string | null
 }
@@ -26,11 +29,14 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
   const [imageMode, setImageMode] = useState<ImageInputMode>('url')
   const [uploadProgress, setUploadProgress] = useState(0)
   
-  const [formData, setFormData] = useState<Partial<ToolType>>({
+  const [formData, setFormData] = useState({
     name: '',
+    nameCnSimplified: '',
+    nameCnTraditional: '',
     category: 'TOOL',
     description: '',
-    maxBorrowDuration: '7 days',
+    descriptionCn: '',
+    maxBorrowDays: 7,
     imageUrl: '',
   })
 
@@ -43,13 +49,25 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     if (!typeId) return
-    
+
     async function fetchToolType() {
       try {
         const res = await fetch(`/api/tool-types/${typeId}`)
         if (!res.ok) throw new Error('Failed to fetch tool type')
         const data = await res.json()
-        setFormData(data)
+        // Parse maxBorrowDuration (e.g., "7 days") to extract days
+        const daysMatch = data.maxBorrowDuration?.match(/(\d+)/)
+        const maxBorrowDays = daysMatch ? parseInt(daysMatch[1]) : 7
+        setFormData({
+          name: data.name || '',
+          nameCnSimplified: data.nameCnSimplified || '',
+          nameCnTraditional: data.nameCnTraditional || '',
+          category: data.category || 'TOOL',
+          description: data.description || '',
+          descriptionCn: data.descriptionCn || '',
+          maxBorrowDays,
+          imageUrl: data.imageUrl || '',
+        })
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
@@ -117,7 +135,16 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
       const res = await fetch(`/api/tool-types/${typeId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          nameCnSimplified: formData.nameCnSimplified || null,
+          nameCnTraditional: formData.nameCnTraditional || null,
+          category: formData.category,
+          description: formData.description || null,
+          descriptionCn: formData.descriptionCn || null,
+          maxBorrowDuration: `${formData.maxBorrowDays} days`,
+          imageUrl: formData.imageUrl || null,
+        }),
       })
 
       if (!res.ok) {
@@ -185,6 +212,34 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
             </select>
           </div>
 
+          {/* Chinese Name (Simplified) */}
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text font-semibold">中文名称 (简体)</span>
+            </label>
+            <input
+              type="text"
+              value={formData.nameCnSimplified || ''}
+              onChange={(e) => setFormData({ ...formData, nameCnSimplified: e.target.value })}
+              className="input input-bordered w-full"
+              placeholder="例如：数字万用表"
+            />
+          </div>
+
+          {/* Chinese Name (Traditional) */}
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text font-semibold">中文名稱 (繁體)</span>
+            </label>
+            <input
+              type="text"
+              value={formData.nameCnTraditional || ''}
+              onChange={(e) => setFormData({ ...formData, nameCnTraditional: e.target.value })}
+              className="input input-bordered w-full"
+              placeholder="例如：數字萬用表"
+            />
+          </div>
+
           {/* Description */}
           <div className="form-control mb-4">
             <label className="label">
@@ -199,20 +254,36 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
             />
           </div>
 
+          {/* Chinese Description */}
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text font-semibold">中文描述</span>
+            </label>
+            <textarea
+              value={formData.descriptionCn || ''}
+              onChange={(e) => setFormData({ ...formData, descriptionCn: e.target.value })}
+              className="textarea textarea-bordered w-full"
+              rows={3}
+              placeholder="描述此工具类型..."
+            />
+          </div>
+
           {/* Max Borrow Duration */}
           <div className="form-control mb-4">
             <label className="label">
-              <span className="label-text font-semibold">Max Borrow Duration</span>
+              <span className="label-text font-semibold">Max Borrow Days</span>
             </label>
             <input
-              type="text"
-              value={formData.maxBorrowDuration || ''}
-              onChange={(e) => setFormData({ ...formData, maxBorrowDuration: e.target.value })}
+              type="number"
+              min={1}
+              max={365}
+              value={formData.maxBorrowDays}
+              onChange={(e) => setFormData({ ...formData, maxBorrowDays: parseInt(e.target.value) || 0 })}
               className="input input-bordered w-full"
-              placeholder="e.g., 7 days, 2 weeks"
+              placeholder="e.g., 7"
             />
             <label className="label">
-              <span className="label-text-alt text-base-content/50">How long users can borrow this tool</span>
+              <span className="label-text-alt text-base-content/50">Maximum number of days users can borrow this tool</span>
             </label>
           </div>
 

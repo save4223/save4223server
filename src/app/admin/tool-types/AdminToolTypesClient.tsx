@@ -122,7 +122,7 @@ export default function AdminToolTypesClient({ types: initialTypes }: AdminToolT
                   </td>
                   <td className="font-semibold">{type.name}</td>
                   <td><span className="badge badge-ghost">{type.category}</span></td>
-                  <td>{type.maxBorrowDuration || '7 days'}</td>
+                  <td>{type.maxBorrowDuration ? type.maxBorrowDuration.replace('days', 'days').replace('day', 'day') : '7 days'}</td>
                   <td>
                     <div className="flex gap-2">
                       <Link 
