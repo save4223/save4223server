@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db'
-import { items } from '@/db/schema'
+import { items, locations, profiles } from '@/db/schema'
 import { createClient } from '@/utils/supabase/server'
 import { eq } from 'drizzle-orm'
 
@@ -12,10 +12,23 @@ export async function GET(request: Request) {
 
     if (typeId) {
       const result = await db
-        .select()
+        .select({
+          item: items,
+          location: locations,
+          holder: profiles,
+        })
         .from(items)
+        .leftJoin(locations, eq(items.homeLocationId, locations.id))
+        .leftJoin(profiles, eq(items.currentHolderId, profiles.id))
         .where(eq(items.itemTypeId, parseInt(typeId)))
-      return NextResponse.json(result)
+
+      return NextResponse.json(
+        result.map(({ item, location, holder }) => ({
+          ...item,
+          homeLocation: location?.name || 'Unknown',
+          currentHolder: holder?.fullName || null,
+        }))
+      )
     }
 
     const allItems = await db.select().from(items)
@@ -45,9 +58,9 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { rfidTag, itemTypeId, homeLocationId, status = 'AVAILABLE' } = body
 
-    if (!rfidTag || !itemTypeId || !homeLocationId) {
+    if (!rfidTag || !itemTypeId) {
       return NextResponse.json(
-        { error: 'Missing required fields: rfidTag, itemTypeId, homeLocationId' },
+        { error: 'Missing required fields: rfidTag, itemTypeId' },
         { status: 400 }
       )
     }
@@ -66,14 +79,24 @@ export async function POST(request: Request) {
       )
     }
 
+    const insertData: {
+      rfidTag: string;
+      itemTypeId: number;
+      status: 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE';
+      homeLocationId?: number;
+    } = {
+      rfidTag,
+      itemTypeId,
+      status: status as 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE',
+    }
+
+    if (homeLocationId !== null && homeLocationId !== undefined) {
+      insertData.homeLocationId = homeLocationId
+    }
+
     const newItem = await db
       .insert(items)
-      .values({
-        rfidTag,
-        itemTypeId,
-        homeLocationId,
-        status,
-      })
+      .values(insertData)
       .returning()
 
     return NextResponse.json(newItem[0], { status: 201 })

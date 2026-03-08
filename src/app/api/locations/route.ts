@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       })
       .returning()
 
-    return NextResponse.json(newLocation[0], { status: 201 })
+    return NextResponse.json((newLocation as { id: number; name: string }[])[0], { status: 201 })
   } catch (error) {
     console.error('Failed to create location:', error)
     return NextResponse.json(
