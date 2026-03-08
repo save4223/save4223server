@@ -13,13 +13,21 @@ export default async function Home() {
   } = await supabase.auth.getUser()
 
   // Get statistics
-  const stats = await db.select({
-    totalTypes: sql<number>`count(distinct ${itemTypes.id})`,
-    totalItems: sql<number>`count(${items.id})`,
-    availableItems: sql<number>`count(case when ${items.status} = 'AVAILABLE' then 1 end)`,
-  })
-    .from(itemTypes)
-    .leftJoin(items, sql<number>`true`)
+  const [typeCount, itemStats] = await Promise.all([
+    // Count tool types
+    db.select({ count: sql<number>`count(*)` }).from(itemTypes),
+    // Count items and available items
+    db.select({
+      totalItems: sql<number>`count(*)`,
+      availableItems: sql<number>`count(case when ${items.status} = 'AVAILABLE' then 1 end)`,
+    }).from(items),
+  ])
+
+  const stats = {
+    totalTypes: typeCount[0]?.count || 0,
+    totalItems: itemStats[0]?.totalItems || 0,
+    availableItems: itemStats[0]?.availableItems || 0,
+  }
 
   const signOut = async () => {
     'use server'
@@ -72,7 +80,7 @@ export default async function Home() {
             <div className="card-body items-center text-center">
               <Wrench className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">
-                {stats[0]?.totalTypes || 0}
+                {stats.totalTypes}
               </div>
               <div className="mt-2 text-base-content/70">Tool Types</div>
               <div className="mt-4 text-sm text-accent">
@@ -88,7 +96,7 @@ export default async function Home() {
             <div className="card-body items-center text-center">
               <Package className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">
-                {stats[0]?.totalItems || 0}
+                {stats.totalItems}
               </div>
               <div className="mt-2 text-base-content/70">Total Items</div>
               <div className="mt-4 text-sm text-accent">
@@ -104,7 +112,7 @@ export default async function Home() {
             <div className="card-body items-center text-center">
               <CheckCircle className="w-10 h-10 mb-4 text-accent" />
               <div className="text-3xl font-bold text-accent">
-                {stats[0]?.availableItems || 0}
+                {stats.availableItems}
               </div>
               <div className="mt-2 text-base-content/70">Available</div>
               <div className="mt-4 text-sm text-accent">
