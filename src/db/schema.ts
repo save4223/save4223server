@@ -95,17 +95,27 @@ export const itemTypes = pgTable(
 )
 
 // Items - Individual physical instances
-export const items = pgTable('items', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  itemTypeId: integer('item_type_id').references(() => itemTypes.id).notNull(),
-  rfidTag: varchar('rfid_tag', { length: 100 }).unique().notNull(),
-  status: itemStatusEnum('status').default('AVAILABLE').notNull(),
-  homeLocationId: integer('home_location_id').references(() => locations.id),
-  currentHolderId: uuid('current_holder_id'), // References auth.users(id)
-  dueAt: timestamp('due_at', { withTimezone: true }),
-  lastOverdueNoticeSentAt: timestamp('last_overdue_notice_sent_at', { withTimezone: true }),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const items = pgTable(
+  'items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    itemTypeId: integer('item_type_id').references(() => itemTypes.id).notNull(),
+    rfidTag: varchar('rfid_tag', { length: 100 }).unique().notNull(),
+    status: itemStatusEnum('status').default('AVAILABLE').notNull(),
+    homeLocationId: integer('home_location_id').references(() => locations.id),
+    currentHolderId: uuid('current_holder_id'), // References auth.users(id)
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    lastOverdueNoticeSentAt: timestamp('last_overdue_notice_sent_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    // Composite index for RAG availability scorer queries
+    // Pattern: WHERE item_type_id IN (...) GROUP BY item_type_id
+    index('idx_items_item_type_status').on(table.itemTypeId, table.status),
+    // Index for location-based lookups during enrichment
+    index('idx_items_home_location').on(table.itemTypeId, table.homeLocationId),
+  ]
+)
 
 // 2.3 Session Engine
 
@@ -123,15 +133,25 @@ export const cabinetSessions = pgTable('cabinet_sessions', {
 })
 
 // Inventory Transactions - Atomic events calculated from the session
-export const inventoryTransactions = pgTable('inventory_transactions', {
-  id: serial('id').primaryKey(),
-  sessionId: uuid('session_id').references(() => cabinetSessions.id, { onDelete: 'cascade' }).notNull(),
-  itemId: uuid('item_id').references(() => items.id).notNull(),
-  userId: uuid('user_id').notNull(), // References auth.users(id)
-  actionType: transactionActionEnum('action_type').notNull(),
-  evidenceImagePath: text('evidence_image_path'),
-  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
-})
+export const inventoryTransactions = pgTable(
+  'inventory_transactions',
+  {
+    id: serial('id').primaryKey(),
+    sessionId: uuid('session_id').references(() => cabinetSessions.id, { onDelete: 'cascade' }).notNull(),
+    itemId: uuid('item_id').references(() => items.id).notNull(),
+    userId: uuid('user_id').notNull(), // References auth.users(id)
+    actionType: transactionActionEnum('action_type').notNull(),
+    evidenceImagePath: text('evidence_image_path'),
+    timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    // Composite index for RAG popularity scorer queries
+    // Pattern: WHERE item_id IN (...) AND action_type = 'BORROW'
+    index('idx_transactions_item_action').on(table.itemId, table.actionType),
+    // Index for time-based popularity queries (recent trends)
+    index('idx_transactions_timestamp').on(table.timestamp),
+  ]
+)
 
 // Pairing Codes - Temporary codes for linking NFC cards
 export const pairingCodes = pgTable('pairing_codes', {
