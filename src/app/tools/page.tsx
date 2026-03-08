@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
-import { Wrench, Package, Zap, Box, Search, ArrowLeft } from 'lucide-react'
+import { Wrench, Package, Zap, Box, Search, ArrowLeft, Languages } from 'lucide-react'
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type Category = 'ALL' | 'TOOL' | 'DEVICE' | 'CONSUMABLE'
+type Language = 'en' | 'zh'
 
 interface ToolItem {
   id: string
@@ -20,8 +21,11 @@ interface ToolItem {
 interface ToolType {
   id: number
   name: string
+  nameCnSimplified: string | null
+  nameCnTraditional: string | null
   category: string
   description: string | null
+  descriptionCn: string | null
   imageUrl: string | null
   maxBorrowDuration: string
   items: ToolItem[]
@@ -69,6 +73,7 @@ export default function ToolsGalleryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category>('ALL')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [language, setLanguage] = useState<Language>('en')
 
   useEffect(() => {
     async function fetchData() {
@@ -104,10 +109,12 @@ export default function ToolsGalleryPage() {
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchName = tool.name.toLowerCase().includes(query)
+        const matchNameCn = tool.nameCnSimplified?.toLowerCase().includes(query) || tool.nameCnTraditional?.toLowerCase().includes(query)
         const matchDesc = tool.description?.toLowerCase().includes(query)
+        const matchDescCn = tool.descriptionCn?.toLowerCase().includes(query)
         const matchLocation = tool.items.some(i => i.homeLocation.toLowerCase().includes(query))
         const matchRfid = tool.items.some(i => i.rfidTag.toLowerCase().includes(query))
-        return matchName || matchDesc || matchLocation || matchRfid
+        return matchName || matchNameCn || matchDesc || matchDescCn || matchLocation || matchRfid
       }
       return true
     })
@@ -162,7 +169,15 @@ export default function ToolsGalleryPage() {
                 <h1 className="text-xl sm:text-2xl font-bold text-accent">Tool Library</h1>
               </div>
             </div>
-            <div className="flex gap-2 sm:justify-end">
+            <div className="flex gap-2 sm:justify-end items-center">
+              <button
+                onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
+                className="btn btn-ghost btn-sm"
+                title={language === 'en' ? '切换中文' : 'Switch to English'}
+              >
+                <Languages className="w-4 h-4 mr-1" />
+                {language === 'en' ? '中文' : 'English'}
+              </button>
               <Link href="/user/items" className="btn btn-accent btn-sm">My Items</Link>
               <Link href="/tool-types" className="btn btn-ghost btn-sm hidden sm:inline-flex">Manage Types</Link>
             </div>
@@ -237,11 +252,15 @@ export default function ToolsGalleryPage() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="card-title text-xl">{tool.name}</h2>
+                          <h2 className="card-title text-xl">
+                            {language === 'zh' && tool.nameCnSimplified ? tool.nameCnSimplified : tool.name}
+                          </h2>
                           <CategoryBadge category={tool.category} />
                         </div>
-                        
-                        <p className="text-base-content/70 mt-1 line-clamp-2">{tool.description || 'No description'}</p>
+
+                        <p className="text-base-content/70 mt-1 line-clamp-2">
+                          {language === 'zh' && tool.descriptionCn ? tool.descriptionCn : (tool.description || 'No description')}
+                        </p>
                         
                         <div className="flex flex-wrap gap-2 mt-3">
                           <span className="badge badge-success">{availableCount} Available</span>

@@ -43,8 +43,11 @@ export async function GET() {
       return {
         id: type.id,
         name: type.name,
+        nameCnSimplified: type.nameCnSimplified,
+        nameCnTraditional: type.nameCnTraditional,
         category: type.category,
         description: type.description,
+        descriptionCn: type.descriptionCn,
         imageUrl: type.imageUrl,
         maxBorrowDuration: type.maxBorrowDuration,
         items: typeItems,

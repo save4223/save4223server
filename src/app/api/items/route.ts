@@ -4,6 +4,31 @@ import { items } from '@/db/schema'
 import { createClient } from '@/utils/supabase/server'
 import { eq } from 'drizzle-orm'
 
+// GET /api/items - List items (optionally filtered by typeId)
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const typeId = searchParams.get('typeId')
+
+    if (typeId) {
+      const result = await db
+        .select()
+        .from(items)
+        .where(eq(items.itemTypeId, parseInt(typeId)))
+      return NextResponse.json(result)
+    }
+
+    const allItems = await db.select().from(items)
+    return NextResponse.json(allItems)
+  } catch (error) {
+    console.error('Failed to fetch items:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch items' },
+      { status: 500 }
+    )
+  }
+}
+
 // POST /api/items - Create a new tool item
 export async function POST(request: Request) {
   try {

@@ -68,12 +68,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     const body = await request.json()
-    const { name, category, description, imageUrl, maxBorrowDuration, totalQuantity } = body
+    const { name, nameCnSimplified, nameCnTraditional, category, description, descriptionCn, imageUrl, maxBorrowDuration, totalQuantity } = body
 
     const updateData: Record<string, unknown> = {}
     if (name !== undefined) updateData.name = name
+    if (nameCnSimplified !== undefined) updateData.nameCnSimplified = nameCnSimplified
+    if (nameCnTraditional !== undefined) updateData.nameCnTraditional = nameCnTraditional
     if (category !== undefined) updateData.category = category
     if (description !== undefined) updateData.description = description
+    if (descriptionCn !== undefined) updateData.descriptionCn = descriptionCn
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl
     if (maxBorrowDuration !== undefined) updateData.maxBorrowDuration = maxBorrowDuration
     if (totalQuantity !== undefined) updateData.totalQuantity = totalQuantity

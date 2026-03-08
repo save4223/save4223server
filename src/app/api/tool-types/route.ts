@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, category, description, imageUrl, maxBorrowDuration, totalQuantity } = body
+    const { name, nameCnSimplified, nameCnTraditional, category, description, descriptionCn, imageUrl, maxBorrowDuration, totalQuantity } = body
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json(
@@ -45,8 +45,11 @@ export async function POST(request: Request) {
       .insert(itemTypes)
       .values({
         name,
+        nameCnSimplified: nameCnSimplified || null,
+        nameCnTraditional: nameCnTraditional || null,
         category: category || 'TOOL',
         description: description || null,
+        descriptionCn: descriptionCn || null,
         imageUrl: imageUrl || null,
         maxBorrowDuration: maxBorrowDuration || '7 days',
         totalQuantity: totalQuantity || 0,
