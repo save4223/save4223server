@@ -60,6 +60,26 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Check if route requires authentication
+  const pathname = request.nextUrl.pathname
+  const isAuthPage = pathname === '/login' || pathname.startsWith('/auth/')
+  const isPublicAsset = pathname.startsWith('/_next/') ||
+                        pathname.startsWith('/api/') ||
+                        pathname.includes('.') // static files
+
+  // Allow public assets and auth pages
+  if (isPublicAsset || isAuthPage) {
+    return response
+  }
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    const loginUrl = new URL('/login', request.url)
+    // Store the original URL to redirect back after login
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
   return response
 }
 

@@ -12,6 +12,11 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Redirect to login if not authenticated
+  if (!user) {
+    redirect('/login')
+  }
+
   // Get statistics
   const [typeCount, itemStats] = await Promise.all([
     // Count tool types
