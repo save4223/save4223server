@@ -42,11 +42,15 @@ CREATE TABLE "inventory_transactions" (
 CREATE TABLE "item_types" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(100) NOT NULL,
+	"name_cn_simplified" varchar(100),
+	"name_cn_traditional" varchar(100),
 	"category" "item_category",
 	"description" text,
+	"description_cn" text,
 	"image_url" text,
 	"max_borrow_duration" interval DEFAULT '7 days',
 	"total_quantity" integer DEFAULT 0,
+	"embedding" vector(1024),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -70,6 +74,15 @@ CREATE TABLE "locations" (
 	"parent_id" integer,
 	"is_restricted" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "pairing_codes" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" uuid NOT NULL,
+	"token" varchar(64) NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "pairing_codes_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "profiles" (
@@ -96,4 +109,9 @@ ALTER TABLE "inventory_transactions" ADD CONSTRAINT "inventory_transactions_sess
 ALTER TABLE "inventory_transactions" ADD CONSTRAINT "inventory_transactions_item_id_items_id_fk" FOREIGN KEY ("item_id") REFERENCES "public"."items"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_item_type_id_item_types_id_fk" FOREIGN KEY ("item_type_id") REFERENCES "public"."item_types"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_home_location_id_locations_id_fk" FOREIGN KEY ("home_location_id") REFERENCES "public"."locations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "locations" ADD CONSTRAINT "locations_parent_id_locations_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."locations"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "locations" ADD CONSTRAINT "locations_parent_id_locations_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."locations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_transactions_item_action" ON "inventory_transactions" USING btree ("item_id","action_type");--> statement-breakpoint
+CREATE INDEX "idx_transactions_timestamp" ON "inventory_transactions" USING btree ("timestamp");--> statement-breakpoint
+CREATE INDEX "embedding_idx" ON "item_types" USING hnsw ("embedding" vector_cosine_ops);--> statement-breakpoint
+CREATE INDEX "idx_items_item_type_status" ON "items" USING btree ("item_type_id","status");--> statement-breakpoint
+CREATE INDEX "idx_items_home_location" ON "items" USING btree ("item_type_id","home_location_id");

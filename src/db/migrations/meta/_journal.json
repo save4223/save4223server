@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1771053011925,
-      "tag": "0000_low_mandrill",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1771814072475,
-      "tag": "0001_giant_tomorrow_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1772771115690,
-      "tag": "0002_ordinary_weapon_omega",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1772771742084,
-      "tag": "0003_purple_shinobi_shaw",
+      "when": 1773163685631,
+      "tag": "0000_high_stature",
       "breakpoints": true
     }
   ]
