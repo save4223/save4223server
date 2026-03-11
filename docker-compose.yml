@@ -1,17 +1,26 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:54321}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder-key}
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - EDGE_API_SECRET=${EDGE_API_SECRET:-edge_device_secret_key}
+      # Override DB host to connect to host's Supabase (not container's localhost)
+      - POSTGRES_HOST=100.83.123.68
+      - POSTGRES_PORT=54322
+      # MinIO also needs host IP
+      - MINIO_ENDPOINT=100.83.123.68
     env_file:
-      - .env.production
+      - .env.local
+    # Required for host.docker.internal on Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   nginx:
