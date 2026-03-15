@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { db } from '@/db'
 import { userCards, locations, accessPermissions, profiles } from '@/db/schema'
 import { eq, and, or, gt, isNull } from 'drizzle-orm'
 
 const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
+
+// CORS headers for edge device communication
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+}
+
+/**
+ * OPTIONS /api/edge/local-sync
+ *
+ * Handle CORS preflight requests from Raspberry Pi
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
 
 /**
  * GET /api/edge/local-sync
@@ -36,15 +56,15 @@ export async function GET(request: NextRequest) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Unauthorized - Bearer token required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
-    
+
     const token = authHeader.slice(7)
     if (token !== EDGE_API_SECRET) {
       return NextResponse.json(
         { error: 'Unauthorized - Invalid token' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -133,13 +153,13 @@ export async function GET(request: NextRequest) {
       users,
       restricted_cabinets: restrictedCabinetIds,
       total_users: users.length,
-    })
+    }, { headers: corsHeaders })
 
   } catch (error) {
     console.error('Local sync error:', error)
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

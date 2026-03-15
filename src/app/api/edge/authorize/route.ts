@@ -5,17 +5,36 @@ import { eq, and, or, gt } from 'drizzle-orm'
 
 const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
 
+// CORS headers for edge device communication
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+}
+
+/**
+ * OPTIONS /api/edge/authorize
+ *
+ * Handle CORS preflight requests from Raspberry Pi
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
+
 /**
  * POST /api/edge/authorize
- * 
+ *
  * Edge device (Raspberry Pi) calls this to check if a user can open a cabinet.
- * 
+ *
  * Request Body:
  * {
  *   "card_uid": "ABC123",
  *   "cabinet_id": 1
  * }
- * 
+ *
  * Response:
  * {
  *   "authorized": true,
@@ -31,15 +50,15 @@ export async function POST(request: NextRequest) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Unauthorized - Bearer token required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
-    
+
     const token = authHeader.slice(7)
     if (token !== EDGE_API_SECRET) {
       return NextResponse.json(
         { error: 'Unauthorized - Invalid token' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -50,7 +69,7 @@ export async function POST(request: NextRequest) {
     if (!card_uid || !cabinet_id) {
       return NextResponse.json(
         { error: 'Bad Request - card_uid and cabinet_id required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -62,14 +81,14 @@ export async function POST(request: NextRequest) {
     if (!card) {
       return NextResponse.json(
         { authorized: false, reason: 'Card not registered' },
-        { status: 403 }
+        { status: 403, headers: corsHeaders }
       )
     }
 
     if (!card.isActive) {
       return NextResponse.json(
         { authorized: false, reason: 'Card deactivated' },
-        { status: 403 }
+        { status: 403, headers: corsHeaders }
       )
     }
 
@@ -86,7 +105,7 @@ export async function POST(request: NextRequest) {
     if (!cabinet) {
       return NextResponse.json(
         { authorized: false, reason: 'Cabinet not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -106,12 +125,12 @@ export async function POST(request: NextRequest) {
 
       if (!permission) {
         return NextResponse.json(
-          { 
-            authorized: false, 
+          {
+            authorized: false,
             reason: 'Access denied - Restricted cabinet, no valid permission',
             user_id: card.userId
           },
-          { status: 403 }
+          { status: 403, headers: corsHeaders }
         )
       }
     }
@@ -131,13 +150,13 @@ export async function POST(request: NextRequest) {
       user_id: card.userId,
       user_name: userData?.fullName || userData?.email || 'Unknown',
       cabinet_name: cabinet.name,
-    })
+    }, { headers: corsHeaders })
 
   } catch (error) {
     console.error('Authorize error:', error)
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

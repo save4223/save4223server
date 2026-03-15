@@ -1,26 +1,46 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { pairingCodes, userCards } from '@/db/schema'
 import { eq, and, gt } from 'drizzle-orm'
 
+const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
+
+// CORS headers for edge device communication
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+}
+
+/**
+ * OPTIONS /api/edge/pair-card
+ *
+ * Handle CORS preflight requests from Raspberry Pi
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
+
 // POST /api/edge/pair-card - Pair an NFC card with a user (called by Pi)
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Verify edge device secret
+    // Verify edge device API key
     const authHeader = request.headers.get('authorization')
-    const expectedSecret = process.env.EDGE_DEVICE_SECRET_KEY
-    
-    if (!expectedSecret) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
+        { error: 'Unauthorized - Bearer token required' },
+        { status: 401, headers: corsHeaders }
       )
     }
-    
-    if (authHeader !== `Bearer ${expectedSecret}`) {
+
+    const token = authHeader.slice(7)
+    if (token !== EDGE_API_SECRET) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: 'Unauthorized - Invalid token' },
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -30,7 +50,7 @@ export async function POST(request: Request) {
     if (!pairing_token || !card_uid) {
       return NextResponse.json(
         { error: 'Missing required fields: pairing_token, card_uid' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -48,7 +68,7 @@ export async function POST(request: Request) {
     if (pairingCode.length === 0) {
       return NextResponse.json(
         { error: 'Invalid or expired pairing code' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -68,17 +88,17 @@ export async function POST(request: Request) {
           .update(userCards)
           .set({ lastUsedAt: now, isActive: true })
           .where(eq(userCards.id, existingCard[0].id))
-        
+
         return NextResponse.json({
           success: true,
           message: 'Card already linked to your account',
           userId,
           cardUid: card_uid,
-        })
+        }, { headers: corsHeaders })
       } else {
         return NextResponse.json(
           { error: 'This card is already linked to another user' },
-          { status: 409 }
+          { status: 409, headers: corsHeaders }
         )
       }
     }
@@ -101,12 +121,12 @@ export async function POST(request: Request) {
       message: 'Card successfully linked to your account',
       userId,
       cardUid: card_uid,
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     console.error('Failed to pair card:', error)
     return NextResponse.json(
       { error: 'Failed to pair card' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

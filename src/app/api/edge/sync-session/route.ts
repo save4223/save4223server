@@ -5,6 +5,25 @@ import { eq, inArray } from 'drizzle-orm'
 
 const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
 
+// CORS headers for edge device communication
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+}
+
+/**
+ * OPTIONS /api/edge/sync-session
+ *
+ * Handle CORS preflight requests from Raspberry Pi
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
+
 /**
  * POST /api/edge/sync-session
  * 
@@ -37,33 +56,33 @@ export async function POST(request: NextRequest) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Unauthorized - Bearer token required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
-    
+
     const token = authHeader.slice(7)
     if (token !== EDGE_API_SECRET) {
       return NextResponse.json(
         { error: 'Unauthorized - Invalid token' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
     // Parse request body
     const body = await request.json()
-    const { 
-      session_id, 
-      user_id, 
-      cabinet_id, 
-      start_rfids = [], 
+    const {
+      session_id,
+      user_id,
+      cabinet_id,
+      start_rfids = [],
       end_rfids = [],
-      evidence_image 
+      evidence_image
     } = body
 
     if (!session_id || !user_id || !cabinet_id) {
       return NextResponse.json(
         { error: 'Bad Request - session_id, user_id, and cabinet_id required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -116,7 +135,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'No inventory changes detected',
         transactions: [],
-      })
+      }, { headers: corsHeaders })
     }
 
     // Query items
@@ -228,13 +247,13 @@ export async function POST(request: NextRequest) {
         borrowed: borrowedRfids.length,
         returned: returnedRfids.length,
       },
-    })
+    }, { headers: corsHeaders })
 
   } catch (error) {
     console.error('Sync session error:', error)
     return NextResponse.json(
       { error: 'Internal Server Error', details: String(error) },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

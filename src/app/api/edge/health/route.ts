@@ -3,6 +3,25 @@ import { db } from '@/db'
 
 const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
 
+// CORS headers for edge device communication
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+}
+
+/**
+ * OPTIONS /api/edge/health
+ *
+ * Handle CORS preflight requests from Raspberry Pi
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  })
+}
+
 /**
  * GET /api/edge/health
  *
@@ -27,7 +46,7 @@ export async function GET(request: NextRequest) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Unauthorized - Bearer token required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -35,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (token !== EDGE_API_SECRET) {
       return NextResponse.json(
         { error: 'Unauthorized - Invalid token' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -53,13 +72,13 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version || '1.0.0',
       database: dbStatus,
-    })
+    }, { headers: corsHeaders })
 
   } catch (error) {
     console.error('Health check error:', error)
     return NextResponse.json(
       { healthy: false, error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
