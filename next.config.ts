@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   // Allow Tailscale and other dev origins
-  allowedDevOrigins: ['100.83.123.68', '*.tailscale.net', '*.ts.net'],
+  allowedDevOrigins: ['100.83.123.68','100.125.135.46', '*.tailscale.net', '*.ts.net'],
 }
 
 export default nextConfig
