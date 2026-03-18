@@ -4,12 +4,19 @@ import {
   regenerateAllEmbeddings,
   getEmbeddingStats,
 } from '@/services/embedding-service'
+import { checkAuth } from '@/utils/auth-helpers'
 
 /**
  * GET /api/admin/embeddings
  * Get embedding statistics
  */
 export async function GET() {
+  // Require admin role
+  const auth = await checkAuth('ADMIN')
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   try {
     const stats = await getEmbeddingStats()
     return NextResponse.json(stats)
@@ -25,6 +32,12 @@ export async function GET() {
  * Body: { action: 'generate-missing' | 'regenerate-all' }
  */
 export async function POST(request: NextRequest) {
+  // Require admin role
+  const auth = await checkAuth('ADMIN')
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   try {
     const body = await request.json()
     const action = body.action || 'generate-missing'

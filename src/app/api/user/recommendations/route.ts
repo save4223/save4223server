@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRecommendations, streamRecommendationExplanation } from '@/services/recommendation-service'
 import { rerank } from '@/services/reranker'
+import { checkAuth } from '@/utils/auth-helpers'
 
 /**
  * POST /api/user/recommendations
@@ -16,6 +17,12 @@ import { rerank } from '@/services/reranker'
  * }
  */
 export async function POST(request: NextRequest) {
+  // Require authentication
+  const auth = await checkAuth()
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   try {
     const body = await request.json()
 
@@ -69,6 +76,12 @@ export async function POST(request: NextRequest) {
  * Stream the explanation text
  */
 export async function GET(request: NextRequest) {
+  // Require authentication
+  const auth = await checkAuth()
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('query')
 

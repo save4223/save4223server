@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server'
 import { db } from '@/db'
 import { itemTypes, items, locations, profiles } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { checkAuth } from '@/utils/auth-helpers'
 
 // GET /api/tools - 获取所有工具类型及其个体
 export async function GET() {
+  // Require authentication
+  const auth = await checkAuth()
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   try {
     // 获取所有工具类型
     const types = await db.select().from(itemTypes)

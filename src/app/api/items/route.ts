@@ -3,9 +3,16 @@ import { db } from '@/db'
 import { items, locations, profiles } from '@/db/schema'
 import { createClient } from '@/utils/supabase/server'
 import { eq } from 'drizzle-orm'
+import { checkAuth } from '@/utils/auth-helpers'
 
 // GET /api/items - List items (optionally filtered by typeId)
 export async function GET(request: Request) {
+  // Require authentication
+  const auth = await checkAuth()
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const typeId = searchParams.get('typeId')

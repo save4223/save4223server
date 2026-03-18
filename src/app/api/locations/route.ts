@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server'
 import { db } from '@/db'
 import { locations } from '@/db/schema'
 import { createClient } from '@/utils/supabase/server'
+import { checkAuth } from '@/utils/auth-helpers'
 
 // GET /api/locations - List all locations
 export async function GET() {
+  // Require authentication
+  const auth = await checkAuth()
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   try {
     const allLocations = await db.select().from(locations)
     return NextResponse.json(allLocations)

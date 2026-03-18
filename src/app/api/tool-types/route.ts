@@ -3,9 +3,16 @@ import { db } from '@/db'
 import { itemTypes } from '@/db/schema'
 import { createClient } from '@/utils/supabase/server'
 import { eq } from 'drizzle-orm'
+import { checkAuth } from '@/utils/auth-helpers'
 
 // GET /api/tool-types - List all tool types
 export async function GET() {
+  // Require authentication
+  const auth = await checkAuth()
+  if (!auth.authorized) {
+    return auth.error
+  }
+
   try {
     const types = await db.select().from(itemTypes)
     return NextResponse.json(types)
