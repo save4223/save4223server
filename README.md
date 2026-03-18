@@ -227,6 +227,13 @@ MIT
 
 ## 🔄 Recent Changes
 
+### 2026-03-17 - Security & HTTPS Setup
+
+- **Added authentication to public API routes**: `/api/tools`, `/api/items`, `/api/tool-types`, `/api/locations`
+- **Added admin role check**: `/api/admin/embeddings` now requires ADMIN role
+- **Added auth check**: `/api/user/recommendations` now requires authentication
+- **Created auth-helpers.ts**: Reusable authentication utility
+
 ### 2026-02-21 - Image Upload & Storage Fixes
 
 - **Fixed storage bucket creation**: Added `createServiceRoleClient()` in `src/utils/minio/client.ts` to bypass RLS when creating buckets
@@ -235,21 +242,146 @@ MIT
 - **Fixed error handling**: `ensureBucket()` now properly throws errors instead of silently failing
 - **Seed database**: Added `supabase/seed.sql` with bucket setup and storage policies
 
-### Setup Requirements
+---
 
-After starting Supabase for the first time, run the seed file:
+## 🌐 Production Setup (Supabase Cloud)
+
+### 1. Create Supabase Cloud Project
+
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. Note your project URL and keys from **Settings → API**
+
+### 2. Configure Environment
+
+Update `.env.local` with Supabase Cloud credentials:
+
+```env
+# Supabase Cloud
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Database (from Settings → Database → Connection string)
+DATABASE_URL="postgresql://postgres.[ref]:[password]@db.[ref].supabase.co:5432/postgres"
+DATABASE_SSL=true
+
+# Edge API secret (for Raspberry Pi)
+EDGE_API_SECRET=your-secure-secret
+
+# LLM (local Ollama)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBED_MODEL=nomic-embed-text
+OLLAMA_CHAT_MODEL=llama3.2
+```
+
+### 3. Enable pgvector Extension
+
+In Supabase Dashboard → SQL Editor:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+### 4. Push Schema & Seed
 
 ```bash
+npm run db:push
 npm run db:seed
+
+# Seed item types
+psql "sslmode=require $DATABASE_URL" -f supabase/seed-item-types.sql
 ```
 
-Or manually:
+---
+
+## 🔐 HTTPS Setup (Tailscale)
+
+For secure communication between Raspberry Pi and server:
+
+### 1. Generate Tailscale Certificate
 
 ```bash
-psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/seed.sql
+sudo tailscale cert your-machine.tailXXXXXX.ts.net
+sudo chown $USER:$USER your-machine.tailXXXXXX.ts.net.*
+mv your-machine.tailXXXXXX.ts.net.* ~/.config/tailscale/
 ```
 
-This creates:
-- The `tool-images` storage bucket (20MB limit, public access)
-- RLS policies allowing authenticated users to upload/view images
-- Mock data (admin/user accounts, locations, item types, items)
+### 2. Start HTTPS Server
+
+```bash
+npm run build
+node https-server.js
+```
+
+The server will run on `https://your-machine.tailXXXXXX.ts.net:3001`
+
+### 3. Configure Raspberry Pi
+
+Update `config.json`:
+
+```json
+{
+    "server_url": "https://your-machine.tailXXXXXX.ts.net:3001",
+    "edge_secret": "your-EDGE_API_SECRET",
+    "ssl": { "verify": true }
+}
+```
+
+---
+
+## 🤖 AI Embeddings
+
+### Prerequisites
+
+1. Install Ollama: `curl -fsSL https://ollama.com/install.sh | sh`
+2. Pull embedding model: `ollama pull nomic-embed-text`
+3. Pull chat model: `ollama pull llama3.2`
+
+### Generate Embeddings
+
+```bash
+# Check embedding stats
+curl "https://your-server:3001/api/admin/embeddings" \
+  -H "Cookie: your-session-cookie"
+mid
+# Generate embeddings for items without them
+curl -X POST "https://your-server:3001/api/admin/embeddings" \
+  -H "Content-Type: application/json" \
+  -H "Cookie: your-session-cookie" \
+  -d '{"action": "generate-missing"}'
+
+# Regenerate ALL embeddings (use with caution)
+curl -X POST "https://your-server:3001/api/admin/embeddings" \
+  -H "Content-Type: application/json" \
+  -H "Cookie: your-session-cookie" \
+  -d '{"action": "regenerate-all"}'
+```
+
+### Via Admin UI
+
+1. Log in as admin
+2. Navigate to `/admin/tools`
+3. Click "Generate Embeddings" button
+
+---
+
+## 🛡️ Security
+
+### Authentication
+
+All API routes require authentication unless explicitly public:
+
+| Route | Protection |
+|-------|------------|
+| `/api/health` | Public |
+| `/api/edge/*` | Bearer token (EDGE_API_SECRET) |
+| `/api/admin/*` | ADMIN role required |
+| `/api/user/*` | Authentication required |
+| `/api/tools`, `/api/items`, etc. | Authentication required |
+
+### Best Practices
+
+1. **Never commit `.env.local`** - Contains secrets
+2. **Rotate keys if exposed** - Generate new keys in Supabase Dashboard
+3. **Use strong EDGE_API_SECRET** - For Pi-to-server communication
+4. **Enable RLS policies** - Run seed files to set up policies
