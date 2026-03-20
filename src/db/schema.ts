@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, uuid, integer, jsonb, interval, pgEnum, customType, index } from 'drizzle-orm/pg-core'
+import { pgTable, serial, varchar, text, timestamp, boolean, uuid, integer, jsonb, interval, pgEnum, customType, index, real } from 'drizzle-orm/pg-core'
 
 // Custom vector type for pgvector extension
 const vector = customType<{
@@ -75,6 +75,9 @@ export const userCards = pgTable('user_cards', {
 // 2.2 Inventory Definition
 
 // Item Types - SKU/Category Definitions
+// Supports two inventory models:
+// - TOOL/DEVICE: Tracked individually via items table (quantity = COUNT of items with status='AVAILABLE')
+// - CONSUMABLE: Tracked in bulk via current_stock column
 export const itemTypes = pgTable(
   'item_types',
   {
@@ -87,12 +90,29 @@ export const itemTypes = pgTable(
     descriptionCn: text('description_cn'),
     imageUrl: text('image_url'),
     maxBorrowDuration: interval('max_borrow_duration').default('7 days'),
-    // Note: totalQuantity is computed dynamically from items table (COUNT per item_type_id)
+    // Consumable inventory tracking (bulk tracking)
+    // For TOOL/DEVICE: quantity is computed from items table
+    // For CONSUMABLE: quantity is stored in current_stock
+    currentStock: integer('current_stock').default(0),
+    minThreshold: integer('min_threshold').default(0), // Low stock warning threshold
     embedding: vector('embedding', { dimensions: 1024 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index('embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops'))]
 )
+
+// Fastener Specifications - Extended attributes for fasteners (nuts, bolts, screws)
+// Keeps the main item_types table clean while storing specialized specs
+export const itemTypeFastenerSpecs = pgTable('item_type_fastener_specs', {
+  itemTypeId: integer('item_type_id')
+    .references(() => itemTypes.id, { onDelete: 'cascade' })
+    .primaryKey(),
+  material: varchar('material', { length: 50 }), // e.g., "Stainless Steel 304", "Zinc Plated"
+  diameter: varchar('diameter', { length: 20 }), // e.g., "M8", "1/4\""
+  length: real('length'), // e.g., 20.0, 50.0 (in mm)
+  headShape: varchar('head_shape', { length: 50 }), // e.g., "Hex", "Pan", "Countersunk"
+  driveType: varchar('drive_type', { length: 50 }), // e.g., "Phillips", "Hex Socket (Allen)", "Torx"
+})
 
 // Items - Individual physical instances
 export const items = pgTable(
@@ -173,6 +193,8 @@ export type UserCard = typeof userCards.$inferSelect
 export type NewUserCard = typeof userCards.$inferInsert
 export type ItemType = typeof itemTypes.$inferSelect
 export type NewItemType = typeof itemTypes.$inferInsert
+export type ItemTypeFastenerSpecs = typeof itemTypeFastenerSpecs.$inferSelect
+export type NewItemTypeFastenerSpecs = typeof itemTypeFastenerSpecs.$inferInsert
 export type Item = typeof items.$inferSelect
 export type NewItem = typeof items.$inferInsert
 export type CabinetSession = typeof cabinetSessions.$inferSelect
