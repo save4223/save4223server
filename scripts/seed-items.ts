@@ -1,12 +1,21 @@
 // Seed individual items for each tool type in the database
-// Run: npx tsx scripts/seed-items.ts
+// Run: npx tsx scripts/seed-items.ts [quantity_per_type]
+// Example: npx tsx scripts/seed-items.ts 3  (creates 3 items per tool type)
 
 import { db } from '../src/db'
 import { itemTypes, items, locations } from '../src/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 async function seedItems() {
-  console.log('🌱 Seeding items for each tool type...\n')
+  // Parse command line args: default 1 item per type
+  const quantityPerType = parseInt(process.argv[2]) || 1
+
+  if (quantityPerType < 1 || quantityPerType > 100) {
+    console.log('❌ Quantity must be between 1 and 100')
+    process.exit(1)
+  }
+
+  console.log(`🌱 Seeding items (${quantityPerType} per tool type)...\n`)
 
   try {
     // Get all tool types and available locations
@@ -31,7 +40,6 @@ async function seedItems() {
     const createdItems: string[] = []
 
     for (const toolType of types) {
-      const quantity = toolType.totalQuantity || 1
       const itemTypeId = toolType.id
       const toolName = toolType.name
 
@@ -42,9 +50,21 @@ async function seedItems() {
         .toUpperCase()
         .padEnd(3, 'X')
 
+      // Check how many items already exist for this type
+      const existingItems = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(items)
+        .where(eq(items.itemTypeId, itemTypeId))
+
+      const existingCount = Number(existingItems[0]?.count || 0)
+
+      // Calculate how many new items to create
+      const startIndex = existingCount + 1
+      const endIndex = existingCount + quantityPerType
+
       const itemsToInsert = []
 
-      for (let i = 1; i <= quantity; i++) {
+      for (let i = startIndex; i <= endIndex; i++) {
         // Generate unique RFID tag: RFID-{PREFIX}-{TYPE_ID}-{SEQUENCE}
         const rfidTag = `RFID-${rfidPrefix}-${itemTypeId}-${String(i).padStart(3, '0')}`
 
@@ -62,14 +82,28 @@ async function seedItems() {
           await db.insert(items).values(itemsToInsert).onConflictDoNothing()
           totalCreated += itemsToInsert.length
           createdItems.push(`${toolName}: ${itemsToInsert.length} items`)
-          console.log(`✅ ${toolName}: ${itemsToInsert.length} items (RFID prefix: ${rfidPrefix})`)
+          console.log(`✅ ${toolName}: ${itemsToInsert.length} items (RFID prefix: ${rfidPrefix}, total: ${endIndex})`)
         } catch (err) {
           console.log(`⚠️ ${toolName}: Some items may already exist (skipping duplicates)`)
         }
+      } else {
+        console.log(`⏭️ ${toolName}: Skipped (already has ${existingCount} items)`)
       }
     }
 
     console.log(`\n📊 Summary: ${totalCreated} items created`)
+
+    // Show total count per type
+    console.log('\n📦 Items count per tool type:')
+    for (const toolType of types) {
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(items)
+        .where(eq(items.itemTypeId, toolType.id))
+      const count = Number(countResult[0]?.count || 0)
+      console.log(`  - ${toolType.name}: ${count} items`)
+    }
+
     console.log('\nSample RFID tags:')
 
     // Show a few examples

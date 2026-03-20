@@ -87,7 +87,7 @@ export const itemTypes = pgTable(
     descriptionCn: text('description_cn'),
     imageUrl: text('image_url'),
     maxBorrowDuration: interval('max_borrow_duration').default('7 days'),
-    totalQuantity: integer('total_quantity').default(0),
+    // Note: totalQuantity is computed dynamically from items table (COUNT per item_type_id)
     embedding: vector('embedding', { dimensions: 1024 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
