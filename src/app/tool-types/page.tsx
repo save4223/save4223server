@@ -208,7 +208,7 @@ export default function ToolTypesPage() {
                       <td className="whitespace-nowrap">
                         <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-base-200 flex items-center justify-center">
                           {type.imageUrl ? (
-                            <img src={type.imageUrl} alt={displayName} className="h-full w-full object-cover" />
+                            <img src={`/api/image-proxy?url=${encodeURIComponent(type.imageUrl!)}`} alt={displayName} className="h-full w-full object-cover" />
                           ) : (
                             <CategoryIcon category={type.category} />
                           )}

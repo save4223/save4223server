@@ -355,7 +355,7 @@ export default function EditToolTypePage({ params }: { params: Promise<{ id: str
                 <p className="text-sm text-base-content/60 mb-2">Preview:</p>
                 <div className="relative h-32 w-32 rounded-lg overflow-hidden bg-base-200 border border-base-300">
                   <img 
-                    src={formData.imageUrl} 
+                    src={`/api/image-proxy?url=${encodeURIComponent(formData.imageUrl)}`}
                     alt="Preview" 
                     className="h-full w-full object-cover"
                     onError={(e) => { 

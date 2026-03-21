@@ -240,7 +240,7 @@ export default function ToolsGalleryPage() {
                     <div className="flex items-start gap-5">
                       <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-base-200">
                         {tool.imageUrl ? (
-                          <img src={tool.imageUrl} alt={tool.name} className="h-full w-full object-cover" />
+                          <img src={`/api/image-proxy?url=${encodeURIComponent(tool.imageUrl)}`} alt={tool.name} className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             {tool.category === 'TOOL' && <Wrench className="w-10 h-10 text-base-content/30" />}
