@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Sparkles, Send, Package, MapPin, AlertCircle, CheckCircle, Wrench, Loader2, Search, BarChart3, MessageSquare } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -194,6 +195,12 @@ function ProgressIndicator({ currentStep }: { currentStep: number }) {
 }
 
 export default function AssistantPage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    router.replace('/')
+  }, [router])
+
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<RecommendationResult | null>(null)

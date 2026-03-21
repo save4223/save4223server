@@ -130,23 +130,6 @@ export default async function Home() {
         {/* Feature Modules */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Link
-            href="/user/assistant"
-            className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
-          >
-            <div className="card-body flex flex-row items-center">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-accent">
-                <Sparkles className="w-8 h-8 text-accent-content" />
-              </div>
-              <div className="ml-6">
-                <h2 className="card-title text-xl">AI Tool Recommender</h2>
-                <p className="mt-2 text-base-content/70">
-                  Describe your project and get tool recommendations
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
             href="/tools"
             className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
           >
