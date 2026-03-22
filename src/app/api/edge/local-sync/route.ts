@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@/db'
-import { userCards, locations, accessPermissions, profiles } from '@/db/schema'
+import { userCards, locations, accessPermissions, profiles, items, itemTypes } from '@/db/schema'
 import { eq, and, or, gt, isNull } from 'drizzle-orm'
 
 const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
@@ -115,10 +115,10 @@ export async function GET(request: NextRequest) {
     // 4. Build users list with permissions
     const users = cards.map(card => {
       const profile = profileMap.get(card.userId)
-      
+
       // Default: can access non-restricted cabinets
       let cabinetPermissions = ['*'] // '*' means all non-restricted
-      
+
       // If user has explicit permissions, add those cabinet IDs
       const userPerms = userPermissions.get(card.userId) || []
       if (userPerms.length > 0) {
@@ -129,10 +129,10 @@ export async function GET(request: NextRequest) {
       // Filter by specific cabinet if requested
       if (cabinetId) {
         const cabId = parseInt(cabinetId)
-        const canAccess = 
-          !restrictedCabinetIds.includes(cabId) || 
+        const canAccess =
+          !restrictedCabinetIds.includes(cabId) ||
           userPerms.includes(cabId)
-        
+
         if (!canAccess) {
           return null // Skip this user
         }
@@ -148,11 +148,48 @@ export async function GET(request: NextRequest) {
       }
     }).filter(Boolean) // Remove null entries
 
+    // 5. Get item types for local cache
+    const allItemTypes = await db.query.itemTypes.findMany()
+    const itemTypesList = allItemTypes.map(it => ({
+      id: it.id,
+      name: it.name,
+      name_cn: it.nameCnSimplified,
+      category: it.category,
+      description: it.description,
+    }))
+
+    // 6. Get items for local cache (with type info)
+    const allItems = await db
+      .select({
+        id: items.id,
+        rfidTag: items.rfidTag,
+        status: items.status,
+        itemTypeId: items.itemTypeId,
+        homeLocationId: items.homeLocationId,
+        currentHolderId: items.currentHolderId,
+        typeName: itemTypes.name,
+      })
+      .from(items)
+      .leftJoin(itemTypes, eq(items.itemTypeId, itemTypes.id))
+
+    const itemsList = allItems.map(item => ({
+      id: item.id,
+      rfid_tag: item.rfidTag,
+      item_type_id: item.itemTypeId,
+      item_type_name: item.typeName || 'Unknown',
+      status: item.status,
+      location_id: item.homeLocationId,
+      holder_id: item.currentHolderId,
+    }))
+
     return NextResponse.json({
       last_updated: now.toISOString(),
       users,
       restricted_cabinets: restrictedCabinetIds,
       total_users: users.length,
+      item_types: itemTypesList,
+      items: itemsList,
+      total_items: itemsList.length,
     }, { headers: corsHeaders })
 
   } catch (error) {
