@@ -105,11 +105,6 @@ DECLARE
     v_user_id UUID := '550e8400-e29b-41d4-a716-446655440001'::UUID;
     v_cabinet_a_id INTEGER;
     v_cabinet_b_id INTEGER;
-    v_drawer_id INTEGER;
-    v_osc_id INTEGER;
-    v_tool_id INTEGER;
-    v_multi_id INTEGER;
-    v_solder_id INTEGER;
 BEGIN
     -- 检查表是否存在
     IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles') THEN
@@ -135,7 +130,6 @@ BEGIN
     -- 获取位置 ID
     SELECT id INTO v_cabinet_a_id FROM locations WHERE name = 'Cabinet A' LIMIT 1;
     SELECT id INTO v_cabinet_b_id FROM locations WHERE name = 'Cabinet B' LIMIT 1;
-    SELECT id INTO v_drawer_id FROM locations WHERE name = 'Drawer 1' LIMIT 1;
 
     -- 2.3 插入权限申请 (没有唯一约束，用 WHERE NOT EXISTS 避免重复)
     INSERT INTO access_permissions (user_id, location_id, status, approved_by, created_at)
@@ -167,24 +161,6 @@ BEGIN
     INSERT INTO item_types (name, category, description, max_borrow_duration, created_at)
     SELECT 'Soldering Station', 'TOOL', 'Temperature controlled soldering station with various tips', '14 days', NOW()
     WHERE NOT EXISTS (SELECT 1 FROM item_types WHERE name = 'Soldering Station');
-
-    -- 获取工具类型 ID
-    SELECT id INTO v_osc_id FROM item_types WHERE name = 'Digital Oscilloscope' LIMIT 1;
-    SELECT id INTO v_tool_id FROM item_types WHERE name = 'Precision Screwdriver Set' LIMIT 1;
-    SELECT id INTO v_multi_id FROM item_types WHERE name = 'Multimeter' LIMIT 1;
-    SELECT id INTO v_solder_id FROM item_types WHERE name = 'Soldering Station' LIMIT 1;
-
-    -- 2.6 插入工具个体 (rfid_tag 有 unique 约束, items 表没有 created_at)
-    INSERT INTO items (item_type_id, rfid_tag, status, home_location_id, current_holder_id, due_at)
-    VALUES 
-        (v_osc_id, 'RFID-OSC-001', 'BORROWED', v_cabinet_a_id, v_user_id, NOW() + INTERVAL '14 days'),
-        (v_osc_id, 'RFID-OSC-002', 'AVAILABLE', v_cabinet_a_id, NULL, NULL),
-        (v_osc_id, 'RFID-OSC-003', 'AVAILABLE', v_cabinet_a_id, NULL, NULL),
-        (v_tool_id, 'RFID-TOOL-001', 'AVAILABLE', v_drawer_id, NULL, NULL),
-        (v_multi_id, 'RFID-MUL-001', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '5 days'),
-        (v_multi_id, 'RFID-MUL-002', 'BORROWED', v_cabinet_b_id, v_user_id, NOW() + INTERVAL '12 days'),
-        (v_solder_id, 'RFID-SOL-001', 'MAINTENANCE', v_cabinet_a_id, NULL, NULL)
-    ON CONFLICT (rfid_tag) DO NOTHING;
 
     RAISE NOTICE 'Mock data inserted successfully!';
 END $$;

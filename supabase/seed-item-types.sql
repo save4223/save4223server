@@ -159,7 +159,33 @@ INSERT INTO item_types (name, name_cn_simplified, name_cn_traditional, category,
 ('WD-40 Multi-Use (100ml)', 'WD-40 多用途防锈润滑剂 (100ml)', 'WD-40 多用途防鏽潤滑劑 (100ml)', 'CONSUMABLE',
  'WD-40 multi-purpose lubricant and rust preventive. Displaces moisture, penetrates rusted parts, and protects metal surfaces. Essential for maintenance and repair.',
  'WD-40多用途润滑剂和防锈剂。排除水分、渗透生锈部件并保护金属表面。维护和维修的必备工具。',
- '14 days', NOW())
+ '14 days', NOW()),
+
+-- Measuring Devices 测量仪器
+('Multimeter', '万用表', '萬用表', 'DEVICE',
+ 'Digital multimeter for measuring voltage, current, resistance, and continuity. Essential for electronics troubleshooting, electrical testing, and circuit diagnosis.',
+ '数字万用表，用于测量电压、电流、电阻和通断。电子故障排查、电气测试和电路诊断的必备工具。',
+ '14 days', NOW()),
+
+-- Hand Tools 手工具
+('Wrench', '扳手', '扳手', 'TOOL',
+ 'Fixed open-end wrench for tightening and loosening nuts and bolts. Suitable for mechanical assembly, plumbing, and general maintenance tasks.',
+ '固定开口扳手，用于拧紧和松开螺母和螺栓。适用于机械组装、管道工程和一般维护。',
+ '7 days', NOW()),
+('Adjustable Wrench', '活动扳手', '活動扳手', 'TOOL',
+ 'Adjustable crescent wrench with movable jaw for various nut and bolt sizes. Versatile tool for plumbing, mechanical work, and general maintenance.',
+ '活动开口扳手，可调节钳口适用于各种螺母和螺栓尺寸。多功能工具，适用于管道、机械工作和一般维护。',
+ '7 days', NOW()),
+('Scraper / Putty Knife', '铲刀', '鏟刀', 'TOOL',
+ 'Flat scraper blade for removing paint, adhesive, putty, and surface residue. Also used for spreading and smoothing compounds. Essential for surface preparation.',
+ '平铲刀，用于去除油漆、胶水、腻子和表面残留物。也用于涂抹和抹平材料。表面处理的必备工具。',
+ '7 days', NOW()),
+
+-- Storage & Organization 储存整理
+('Screw Box (Assorted)', '螺丝盒', '螺絲盒', 'TOOL',
+ 'Organizer box containing assorted screws and fasteners. Tracked as a single unit. Useful for repairs, prototyping, and general assembly work.',
+ '包含各种螺丝和紧固件的整理盒。作为单个物品追踪。适用于维修、原型制作和一般组装工作。',
+ '7 days', NOW())
 
 ON CONFLICT DO NOTHING;
 

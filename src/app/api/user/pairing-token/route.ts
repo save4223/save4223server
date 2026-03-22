@@ -17,11 +17,14 @@ export async function POST() {
       )
     }
 
-    // Generate a random token
-    const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-    
+    // Generate a random 8-character alphanumeric token (easier for QR scanning)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Removed O,0,I,1 to avoid confusion
+    let token = ''
+    const randomValues = crypto.getRandomValues(new Uint8Array(8))
+    for (let i = 0; i < 8; i++) {
+      token += chars[randomValues[i] % chars.length]
+    }
+
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes expiry
 
     // Delete any existing code for this user
