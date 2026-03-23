@@ -1,14 +1,38 @@
 /**
  * Email Service for Save4223
  *
- * Uses Supabase's built-in email capabilities to send notifications.
+ * Sends checkout/return notifications via SMTP.
  * Toggle enabled via environment variable ENABLE_EMAIL_NOTIFICATIONS
  */
 
-import { createClient } from '@/utils/supabase/server'
+import nodemailer from 'nodemailer'
 
 // Email feature toggle - can be disabled for testing
 const EMAIL_ENABLED = process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true'
+
+// SMTP configuration
+const SMTP_HOST = process.env.SMTP_HOST
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587')
+const SMTP_USER = process.env.SMTP_USER
+const SMTP_PASS = process.env.SMTP_PASS
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER
+
+// Create SMTP transporter if configured
+function createTransporter() {
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    return null
+  }
+
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465, // true for 465, false for other ports
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  })
+}
 
 interface TransactionItem {
   name: string
@@ -38,86 +62,102 @@ export async function sendCheckoutEmail(summary: SessionSummary): Promise<boolea
   }
 
   try {
-    const supabase = await createClient()
-
     // Build email content
-    const subject = `Save4223 - Session Summary: ${summary.borrowed.length} borrowed, ${summary.returned.length} returned`
+    const subject = `Tool Checkout Summary - ${summary.cabinetName}`
 
-    const borrowedSection = summary.borrowed.length > 0
-      ? `
-<h3>📤 Borrowed Items (${summary.borrowed.length})</h3>
-<ul>
-${summary.borrowed.map(item => `
-  <li>
-    <strong>${item.name}</strong> (Tag: ${item.rfidTag.slice(0, 8)}...)
-    ${item.dueAt ? `<br>Due: ${new Date(item.dueAt).toLocaleDateString()}` : ''}
-  </li>
-`).join('')}
-</ul>
-`
-      : ''
+    const borrowedList = summary.borrowed.length > 0
+      ? summary.borrowed.map(item =>
+          `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.rfidTag}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.dueAt ? new Date(item.dueAt).toLocaleDateString() : 'N/A'}</td>
+          </tr>`
+        ).join('')
+      : '<tr><td colspan="3" style="padding: 8px; color: #666;">No items borrowed</td></tr>'
 
-    const returnedSection = summary.returned.length > 0
-      ? `
-<h3>📥 Returned Items (${summary.returned.length})</h3>
-<ul>
-${summary.returned.map(item => `
-  <li><strong>${item.name}</strong> (Tag: ${item.rfidTag.slice(0, 8)}...)</li>
-`).join('')}
-</ul>
-`
-      : ''
+    const returnedList = summary.returned.length > 0
+      ? summary.returned.map(item =>
+          `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.rfidTag}</td>
+          </tr>`
+        ).join('')
+      : '<tr><td colspan="2" style="padding: 8px; color: #666;">No items returned</td></tr>'
 
     const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #003974; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-    .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
-    h2 { margin-top: 0; }
-    h3 { color: #003974; border-bottom: 2px solid #eee; padding-bottom: 8px; }
-    ul { padding-left: 20px; }
-    li { margin-bottom: 12px; }
-    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-    .badge-borrow { background: #fee2e2; color: #dc2626; }
-    .badge-return { background: #dcfce7; color: #16a34a; }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tool Checkout Summary</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2>Save4223 Session Complete</h2>
-      <p>Hi ${summary.userName},</p>
-    </div>
-    <div class="content">
-      <p>Your cabinet session at <strong>${summary.cabinetName}</strong> has been completed.</p>
-      <p><strong>Time:</strong> ${summary.timestamp.toLocaleString()}</p>
-      <p><strong>Session ID:</strong> ${summary.sessionId.slice(0, 8)}...</p>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h1 style="color: #2c3e50; margin: 0;">Tool Checkout Summary</h1>
+    <p style="margin: 10px 0 0 0; color: #666;">
+      <strong>Cabinet:</strong> ${summary.cabinetName}<br>
+      <strong>Date:</strong> ${summary.timestamp.toLocaleString()}<br>
+      <strong>Session ID:</strong> ${summary.sessionId.slice(0, 8)}...
+    </p>
+  </div>
 
-      ${borrowedSection}
-      ${returnedSection}
+  ${summary.borrowed.length > 0 ? `
+  <div style="margin-bottom: 30px;">
+    <h2 style="color: #27ae60; border-bottom: 2px solid #27ae60; padding-bottom: 8px;">
+      ✅ Borrowed Items (${summary.borrowed.length})
+    </h2>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background: #f8f9fa;">
+          <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Item Name</th>
+          <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">RFID Tag</th>
+          <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Due Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${borrowedList}
+      </tbody>
+    </table>
+  </div>
+  ` : ''}
 
-      ${summary.borrowed.length > 0 ? `
-      <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 20px;">
-        <strong>Reminder:</strong> Please return borrowed items by their due dates to avoid penalties.
-      </div>
-      ` : ''}
+  ${summary.returned.length > 0 ? `
+  <div style="margin-bottom: 30px;">
+    <h2 style="color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 8px;">
+      ↩️ Returned Items (${summary.returned.length})
+    </h2>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background: #f8f9fa;">
+          <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Item Name</th>
+          <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">RFID Tag</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${returnedList}
+      </tbody>
+    </table>
+  </div>
+  ` : ''}
 
-      <div class="footer">
-        <p>This is an automated message from Save4223 Smart Lab Inventory System.</p>
-        <p>If you have questions, please contact the lab administrator.</p>
-      </div>
-    </div>
+  <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin-top: 20px;">
+    <p style="margin: 0; color: #856404;">
+      <strong>⚠️ Reminder:</strong> Please return borrowed items by their due date to avoid overdue notices.
+    </p>
+  </div>
+
+  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
+    <p>
+      This is an automated message from Save4223 Smart Lab Inventory System.<br>
+      If you have questions, please contact the lab administrator.
+    </p>
   </div>
 </body>
 </html>
 `
 
-    // Send email using SMTP method
+    // Send email using SMTP
     // Note: Supabase doesn't have a direct email API for arbitrary emails
     const sent = await sendEmailViaSMTP(summary.userEmail, subject, htmlContent)
 
@@ -139,7 +179,7 @@ ${summary.returned.map(item => `
 }
 
 /**
- * Send email using SMTP (alternative method)
+ * Send email using SMTP
  */
 export async function sendEmailViaSMTP(
   to: string,
@@ -150,21 +190,26 @@ export async function sendEmailViaSMTP(
     return false
   }
 
+  const transporter = createTransporter()
+  if (!transporter) {
+    console.log('[Email] SMTP not configured - logging email instead')
+    console.log('[Email] To:', to)
+    console.log('[Email] Subject:', subject)
+    return false
+  }
+
   try {
-    // For production, use a proper email service like Resend, SendGrid, or AWS SES
-    // This is a placeholder that logs the email
-    console.log('[Email/SMTP] To:', to)
-    console.log('[Email/SMTP] Subject:', subject)
-    console.log('[Email/SMTP] HTML length:', html.length)
+    await transporter.sendMail({
+      from: `"Save4223 Lab System" <${SMTP_FROM}>`,
+      to,
+      subject,
+      html,
+    })
 
-    // TODO: Integrate with actual email provider
-    // Example with Resend:
-    // const resend = new Resend(process.env.RESEND_API_KEY)
-    // await resend.emails.send({ from: 'noreply@save4223.com', to, subject, html })
-
+    console.log('[Email] Sent to:', to)
     return true
   } catch (error) {
-    console.error('[Email/SMTP] Error:', error)
+    console.error('[Email] Failed to send:', error)
     return false
   }
 }
