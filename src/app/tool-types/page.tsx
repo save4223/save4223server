@@ -43,30 +43,11 @@ export default function ToolTypesPage() {
       try {
         setLoading(true)
 
-        // Fetch tool types
-        const typesRes = await fetch('/api/tool-types')
+        // Fetch tool types with stats in a single query
+        const typesRes = await fetch('/api/tool-types/stats')
         if (!typesRes.ok) throw new Error('Failed to fetch tool types')
         const typesData = await typesRes.json()
-
-        // Fetch items stats for each type
-        const typesWithStats = await Promise.all(
-          typesData.map(async (type: ToolType) => {
-            const itemsRes = await fetch(`/api/items?typeId=${type.id}`)
-            let total = 0
-            let available = 0
-            if (itemsRes.ok) {
-              const items = await itemsRes.json()
-              total = items.length
-              available = items.filter((i: { status: string }) => i.status === 'AVAILABLE').length
-            }
-            return {
-              ...type,
-              total,
-              available,
-            }
-          })
-        )
-        setTypes(typesWithStats)
+        setTypes(typesData)
 
         // Fetch user profile to check admin status
         const profileRes = await fetch('/api/user/profile')
