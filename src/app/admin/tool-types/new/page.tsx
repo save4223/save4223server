@@ -6,6 +6,42 @@ import Link from 'next/link'
 
 type ImageInputMode = 'url' | 'upload'
 
+// Check if URL is from Supabase Storage (our own uploads)
+function isSupabaseStorageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    // Supabase storage URLs contain the project ref and bucket name
+    return parsed.hostname.includes('supabase.co') && parsed.pathname.includes('/tool-images/')
+  } catch {
+    return false
+  }
+}
+
+// Image preview component that handles both direct and proxied URLs
+function ImagePreview({ url }: { url: string }) {
+  const [error, setError] = useState(false)
+
+  if (error) {
+    return (
+      <span className="flex h-full items-center justify-center text-error text-xs text-center px-2">
+        Failed to load
+      </span>
+    )
+  }
+
+  // Use direct URL for Supabase Storage, proxy for external URLs
+  const imageUrl = isSupabaseStorageUrl(url) ? url : `/api/image-proxy?url=${encodeURIComponent(url)}`
+
+  return (
+    <img
+      src={imageUrl}
+      alt="Preview"
+      className="h-full w-full object-cover"
+      onError={() => setError(true)}
+    />
+  )
+}
+
 export default function NewToolTypePage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
@@ -280,15 +316,7 @@ export default function NewToolTypePage() {
               <div className="mt-4">
                 <p className="text-sm text-base-content/60 mb-2">Preview:</p>
                 <div className="relative h-32 w-32 rounded-lg overflow-hidden bg-base-200 border border-base-300">
-                  <img 
-                    src={`/api/image-proxy?url=${encodeURIComponent(formData.imageUrl)}`}
-                    alt="Preview" 
-                    className="h-full w-full object-cover"
-                    onError={(e) => { 
-                      (e.target as HTMLImageElement).style.display = 'none'
-                      ;(e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="flex h-full items-center justify-center text-error text-xs">Failed to load</span>'
-                    }}
-                  />
+                  <ImagePreview url={formData.imageUrl} />
                 </div>
               </div>
             )}
