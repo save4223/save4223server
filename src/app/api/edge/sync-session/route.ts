@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { cabinetSessions, inventoryTransactions, items, itemTypes } from '@/db/schema'
+import { cabinetSessions, inventoryTransactions, items, itemTypes, locations, profiles } from '@/db/schema'
 import { eq, inArray } from 'drizzle-orm'
+import { sendCheckoutEmail } from '@/lib/email-service'
 
 const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
 
@@ -150,7 +151,12 @@ export async function POST(request: NextRequest) {
     })
     const itemTypeMap = new Map(itemTypesData.map(t => [t.id, t]))
 
-    const rfidToItem = new Map(itemsData.map(item => [item.rfidTag, item]))
+    const rfidToItem = new Map(
+      itemsData.map(item => {
+        const itemType = itemTypeMap.get(item.itemTypeId)
+        return [item.rfidTag, { ...item, name: itemType?.name || 'Unknown Item' }]
+      })
+    )
 
     // 4. Create inventory transactions and update item status
     const transactions = []
@@ -238,6 +244,46 @@ export async function POST(request: NextRequest) {
     }
 
     // TODO: Upload evidence image to MinIO/S3 if provided
+
+    // 5. Send email notification to user
+    try {
+      // Get user info
+      const user = await db.query.profiles.findFirst({
+        where: eq(profiles.id, user_id),
+      })
+
+      // Get cabinet name
+      const cabinet = await db.query.locations.findFirst({
+        where: eq(locations.id, cabinet_id),
+      })
+
+      if (user?.email && transactions.length > 0) {
+        // Build transaction items with names
+        const transactionItems = transactions.map(tx => {
+          const item = rfidToItem.get(tx.rfid_tag)
+          return {
+            name: item?.name || `Item ${tx.rfid_tag.slice(0, 8)}...`,
+            rfidTag: tx.rfid_tag,
+            action: tx.action as 'BORROW' | 'RETURN',
+            dueAt: tx.due_at,
+          }
+        })
+
+        await sendCheckoutEmail({
+          sessionId: session_id,
+          userId: user_id,
+          userEmail: user.email,
+          userName: user.fullName || user.email,
+          borrowed: transactionItems.filter(i => i.action === 'BORROW'),
+          returned: transactionItems.filter(i => i.action === 'RETURN'),
+          cabinetName: cabinet?.name || `Cabinet ${cabinet_id}`,
+          timestamp: now,
+        })
+      }
+    } catch (emailError) {
+      // Don't fail the request if email fails
+      console.error('[SyncSession] Email notification failed:', emailError)
+    }
 
     return NextResponse.json({
       success: true,

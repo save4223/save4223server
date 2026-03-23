@@ -36,6 +36,7 @@ export default function ToolTypesPage() {
   const [error, setError] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [language, setLanguage] = useState<Language>('en')
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -83,12 +84,17 @@ export default function ToolTypesPage() {
     fetchData()
   }, [])
 
+  const filteredTypes = useMemo(() => {
+    if (!showOnlyAvailable) return types
+    return types.filter(t => t.available > 0)
+  }, [types, showOnlyAvailable])
+
   const stats = useMemo(() => {
-    const totalTypes = types.length
-    const totalItems = types.reduce((sum, t) => sum + t.total, 0)
-    const totalAvailable = types.reduce((sum, t) => sum + t.available, 0)
+    const totalTypes = filteredTypes.length
+    const totalItems = filteredTypes.reduce((sum, t) => sum + t.total, 0)
+    const totalAvailable = filteredTypes.reduce((sum, t) => sum + t.available, 0)
     return { totalTypes, totalItems, totalAvailable }
-  }, [types])
+  }, [filteredTypes])
 
   if (loading) {
     return (
@@ -133,6 +139,17 @@ export default function ToolTypesPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer btn btn-ghost btn-sm">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-accent checkbox-sm"
+                  checked={showOnlyAvailable}
+                  onChange={(e) => setShowOnlyAvailable(e.target.checked)}
+                />
+                <span className="text-sm">
+                  {language === 'zh' ? '仅显示可用' : 'Available only'}
+                </span>
+              </label>
               <button
                 onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
                 className="btn btn-ghost btn-sm"
@@ -199,7 +216,7 @@ export default function ToolTypesPage() {
                 </tr>
               </thead>
               <tbody>
-                {types.map((type) => {
+                {filteredTypes.map((type) => {
                   const displayName = language === 'zh' && type.nameCnSimplified ? type.nameCnSimplified : type.name
                   const displayDesc = language === 'zh' && type.descriptionCn ? type.descriptionCn : type.description
 
@@ -257,14 +274,28 @@ export default function ToolTypesPage() {
         </div>
 
         {/* Empty State */}
-        {types.length === 0 && (
+        {filteredTypes.length === 0 && (
           <div className="mt-8 card bg-base-200">
             <div className="card-body items-center text-center py-12">
               <Package className="w-16 h-16 text-base-content/30 mb-4" />
-              <h3 className="text-xl font-bold mt-4">{language === 'zh' ? '无工具类型' : 'No Tool Types'}</h3>
+              <h3 className="text-xl font-bold mt-4">
+                {showOnlyAvailable
+                  ? (language === 'zh' ? '无可用工具' : 'No Available Tools')
+                  : (language === 'zh' ? '无工具类型' : 'No Tool Types')}
+              </h3>
               <p className="text-base-content/60 mt-2">
-                {language === 'zh' ? '请先创建工具类型' : 'Please create tool types first'}
+                {showOnlyAvailable
+                  ? (language === 'zh' ? '当前没有可用的工具，请稍后查看' : 'No tools are currently available. Check back later.')
+                  : (language === 'zh' ? '请先创建工具类型' : 'Please create tool types first')}
               </p>
+              {showOnlyAvailable && (
+                <button
+                  onClick={() => setShowOnlyAvailable(false)}
+                  className="btn btn-accent btn-sm mt-4"
+                >
+                  {language === 'zh' ? '显示全部' : 'Show All'}
+                </button>
+              )}
             </div>
           </div>
         )}
