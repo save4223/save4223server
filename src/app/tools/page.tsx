@@ -72,6 +72,7 @@ export default function ToolsGalleryPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category>('ALL')
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [language, setLanguage] = useState<Language>('en')
 
@@ -103,9 +104,16 @@ export default function ToolsGalleryPage() {
 
   const filteredTools = useMemo(() => {
     return tools.filter((tool) => {
+      // Filter by category
       if (selectedCategory !== 'ALL' && tool.category !== selectedCategory) {
         return false
       }
+      // Filter by availability (show only types with available items)
+      if (showOnlyAvailable) {
+        const availableCount = tool.items.filter(i => i.status === 'AVAILABLE').length
+        if (availableCount === 0) return false
+      }
+      // Filter by search query
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchName = tool.name.toLowerCase().includes(query)
@@ -118,7 +126,7 @@ export default function ToolsGalleryPage() {
       }
       return true
     })
-  }, [tools, searchQuery, selectedCategory])
+  }, [tools, searchQuery, selectedCategory, showOnlyAvailable])
 
   const stats = useMemo(() => {
     const totalTypes = filteredTools.length
@@ -207,6 +215,18 @@ export default function ToolsGalleryPage() {
                 {cat.label}
               </button>
             ))}
+            <div className="divider divider-horizontal mx-1"></div>
+            <label className="flex items-center gap-2 cursor-pointer btn btn-sm btn-ghost whitespace-nowrap">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-accent checkbox-sm"
+                checked={showOnlyAvailable}
+                onChange={(e) => setShowOnlyAvailable(e.target.checked)}
+              />
+              <span className="text-sm">
+                {language === 'zh' ? '仅显示可用' : 'Available only'}
+              </span>
+            </label>
           </div>
         </div>
       </div>
@@ -217,11 +237,18 @@ export default function ToolsGalleryPage() {
           <div className="card bg-base-200">
             <div className="card-body items-center text-center py-20">
               <Search className="w-16 h-16 text-base-content/30 mb-4" />
-              <h3 className="text-xl font-bold mt-4">{tools.length === 0 ? 'No Tools Available' : 'No Matching Tools'}</h3>
-              <p className="text-base-content/60 mt-2">{tools.length === 0 ? 'Please add tool types and items first' : 'Try adjusting your search or filter'}</p>
+              <h3 className="text-xl font-bold mt-4">
+                {tools.length === 0 ? 'No Tools Available' :
+                 showOnlyAvailable ? 'No Available Tools' : 'No Matching Tools'}
+              </h3>
+              <p className="text-base-content/60 mt-2">
+                {tools.length === 0 ? 'Please add tool types and items first' :
+                 showOnlyAvailable ? 'All tools are currently borrowed. Uncheck "Available only" to see all.' :
+                 'Try adjusting your search or filter'}
+              </p>
               {tools.length > 0 && (
                 <button
-                  onClick={() => { setSearchQuery(''); setSelectedCategory('ALL') }}
+                  onClick={() => { setSearchQuery(''); setSelectedCategory('ALL'); setShowOnlyAvailable(false) }}
                   className="btn btn-accent btn-sm mt-4"
                 >
                   Clear Filters
