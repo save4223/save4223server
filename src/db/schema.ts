@@ -173,12 +173,44 @@ export const inventoryTransactions = pgTable(
   ]
 )
 
+export const issueReportTypeEnum = pgEnum('issue_report_type', ['DIDNT_BORROW', 'ALREADY_RETURNED', 'TAG_DAMAGED', 'TOOL_BROKEN', 'OTHER'])
+export const issueReportStatusEnum = pgEnum('issue_report_status', ['PENDING', 'RESOLVED', 'DISMISSED'])
+export const borrowRequestStatusEnum = pgEnum('borrow_request_status', ['PENDING', 'APPROVED', 'REJECTED', 'EXPIRED', 'CANCELLED'])
+
 // Pairing Codes - Temporary codes for linking NFC cards
 export const pairingCodes = pgTable('pairing_codes', {
   id: serial('id').primaryKey(),
   userId: uuid('user_id').notNull().unique(), // One active code per user
   token: varchar('token', { length: 64 }).notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// Issue Reports - Student-reported problems with borrowed items
+export const issueReports = pgTable('issue_reports', {
+  id: serial('id').primaryKey(),
+  itemId: uuid('item_id').references(() => items.id).notNull(),
+  userId: uuid('user_id').references(() => profiles.id).notNull(),
+  reportType: issueReportTypeEnum('report_type').notNull(),
+  description: text('description'),
+  status: issueReportStatusEnum('status').default('PENDING').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  resolvedBy: uuid('resolved_by').references(() => profiles.id),
+})
+
+// Borrow Requests - Student requests for special permission to borrow devices
+export const borrowRequests = pgTable('borrow_requests', {
+  id: serial('id').primaryKey(),
+  userId: uuid('user_id').references(() => profiles.id).notNull(),
+  itemTypeId: integer('item_type_id').references(() => itemTypes.id).notNull(),
+  reason: text('reason').notNull(),
+  requestedStart: timestamp('requested_start', { withTimezone: true }).notNull(),
+  requestedEnd: timestamp('requested_end', { withTimezone: true }).notNull(),
+  status: borrowRequestStatusEnum('status').default('PENDING').notNull(),
+  adminReviewReason: text('admin_review_reason'),
+  reviewedBy: uuid('reviewed_by').references(() => profiles.id),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
@@ -201,3 +233,7 @@ export type CabinetSession = typeof cabinetSessions.$inferSelect
 export type NewCabinetSession = typeof cabinetSessions.$inferInsert
 export type InventoryTransaction = typeof inventoryTransactions.$inferSelect
 export type NewInventoryTransaction = typeof inventoryTransactions.$inferInsert
+export type IssueReport = typeof issueReports.$inferSelect
+export type NewIssueReport = typeof issueReports.$inferInsert
+export type BorrowRequest = typeof borrowRequests.$inferSelect
+export type NewBorrowRequest = typeof borrowRequests.$inferInsert
