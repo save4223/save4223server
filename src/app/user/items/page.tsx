@@ -3,7 +3,15 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Package, ArrowLeft, Wrench, Zap, Box, AlertCircle, AlertTriangle } from 'lucide-react'
+import { Package, ArrowLeft, Wrench, Zap, Box, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react'
+
+const REPORT_TYPES = [
+  { value: 'DIDNT_BORROW', label: "I didn't borrow this" },
+  { value: 'ALREADY_RETURNED', label: 'I already returned this' },
+  { value: 'TAG_DAMAGED', label: 'Tag is damaged / cannot scan' },
+  { value: 'TOOL_BROKEN', label: 'Tool is broken / defective' },
+  { value: 'OTHER', label: 'Other (please describe)' },
+] as const
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type TransactionAction = 'BORROW' | 'RETURN' | 'MISSING_UNEXPECTED'
@@ -84,6 +92,12 @@ export default function UserItemsPage() {
   const [data, setData] = useState<UserItemsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<HeldItem | null>(null)
+  const [reportType, setReportType] = useState('')
+  const [reportDescription, setReportDescription] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [reportSuccess, setReportSuccess] = useState(false)
 
   useEffect(() => {
     async function fetchUserItems() {
@@ -106,6 +120,48 @@ export default function UserItemsPage() {
     }
     fetchUserItems()
   }, [])
+
+  async function handleReportSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedItem || !reportType) return
+
+    try {
+      setSubmitting(true)
+      const res = await fetch('/api/user/issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: selectedItem.id,
+          reportType,
+          description: reportDescription || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to submit report')
+      }
+      setReportSuccess(true)
+      setReportType('')
+      setReportDescription('')
+      setSelectedItem(null)
+      setTimeout(() => {
+        setReportSuccess(false)
+        setShowReportModal(false)
+      }, 1500)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to submit report')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function openReportModal(item: HeldItem) {
+    setSelectedItem(item)
+    setReportType('')
+    setReportDescription('')
+    setReportSuccess(false)
+    setShowReportModal(true)
+  }
 
   if (loading) {
     return (
@@ -216,6 +272,14 @@ export default function UserItemsPage() {
                           <span>Overdue! Please return soon!</span>
                         </div>
                       )}
+
+                      <button
+                        onClick={() => openReportModal(item)}
+                        className="btn btn-error btn-outline btn-sm mt-3"
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-1" />
+                        Report Issue
+                      </button>
                     </div>
                   </div>
                 )
@@ -277,6 +341,94 @@ export default function UserItemsPage() {
           )}
         </section>
       </div>
+
+      {/* Report Issue Modal */}
+      {showReportModal && selectedItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="card bg-base-100 w-full max-w-md">
+            <form onSubmit={handleReportSubmit} className="card-body">
+              <h3 className="card-title mb-4 flex items-center gap-2 text-error">
+                <AlertTriangle className="w-5 h-5" />
+                Report Issue
+              </h3>
+
+              <p className="text-sm text-base-content/70 mb-2">
+                Reporting: <strong>{selectedItem.itemType.name}</strong> (RFID: {selectedItem.rfidTag})
+              </p>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Issue Type</span>
+                </label>
+                <div className="space-y-2">
+                  {REPORT_TYPES.map((rt) => (
+                    <label
+                      key={rt.value}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        reportType === rt.value
+                          ? 'border-accent bg-accent/10'
+                          : 'border-base-300 hover:border-base-content/30'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="reportType"
+                        value={rt.value}
+                        checked={reportType === rt.value}
+                        onChange={(e) => setReportType(e.target.value)}
+                        className="radio radio-accent radio-sm"
+                      />
+                      <span className="text-sm">{rt.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {reportType && (
+                <div className="form-control mt-4">
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      Description {reportType === 'OTHER' ? '(required)' : '(optional)'}
+                    </span>
+                  </label>
+                  <textarea
+                    className="textarea textarea-bordered h-24"
+                    placeholder="Provide additional details about the issue..."
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                    required={reportType === 'OTHER'}
+                  />
+                </div>
+              )}
+
+              {reportSuccess && (
+                <div className="alert alert-success mt-4">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Report submitted successfully!</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(false)}
+                  className="btn btn-ghost flex-1"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-error flex-1"
+                  disabled={submitting || !reportType}
+                >
+                  {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Submit Report'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
