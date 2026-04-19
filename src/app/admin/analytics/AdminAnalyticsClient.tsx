@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { BarChart3, AlertTriangle, Package, TrendingUp, CheckCircle, XCircle } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { BarChart3, AlertTriangle, Package, TrendingUp, CheckCircle, XCircle, Wrench, Zap, Box } from 'lucide-react'
 
 interface MetricData {
   id: number
@@ -66,6 +66,7 @@ export default function AdminAnalyticsClient() {
   const [issues, setIssues] = useState<IssueReport[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
 
   useEffect(() => {
     async function fetchData() {
@@ -125,28 +126,69 @@ export default function AdminAnalyticsClient() {
   const metrics = data?.metrics || []
   const summary = data?.summary || { totalTypes: 0, totalItems: 0, totalBorrows: 0, totalWarnings: 0 }
 
+  const filteredMetrics = useMemo(() => {
+    if (categoryFilter === 'ALL') return metrics
+    return metrics.filter(m => m.category === categoryFilter)
+  }, [metrics, categoryFilter])
+
+  const filteredSummary = useMemo(() => {
+    if (categoryFilter === 'ALL') return summary
+    const filtered = filteredMetrics
+    return {
+      totalTypes: filtered.length,
+      totalItems: filtered.reduce((sum, m) => sum + m.total, 0),
+      totalBorrows: filtered.reduce((sum, m) => sum + m.borrowsThisMonth, 0),
+      totalWarnings: filtered.filter(m => m.isLowStock).length,
+    }
+  }, [filteredMetrics, summary])
+
+  const filteredIssues = useMemo(() => {
+    if (categoryFilter === 'ALL') return issues
+    return issues.filter(i => i.itemType?.category === categoryFilter)
+  }, [issues, categoryFilter])
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-accent flex items-center gap-2">
           <BarChart3 className="w-6 h-6" /> Analytics
         </h1>
-        <div className="join">
-          <button
-            className={`join-item btn btn-sm ${activeTab === 'metrics' ? 'btn-accent' : 'btn-outline'}`}
-            onClick={() => setActiveTab('metrics')}
-          >
-            Metrics
-          </button>
-          <button
-            className={`join-item btn btn-sm ${activeTab === 'issues' ? 'btn-accent' : 'btn-outline'}`}
-            onClick={() => setActiveTab('issues')}
-          >
-            Issue Reports
-            {issues.filter(i => i.status === 'PENDING').length > 0 && (
-              <span className="badge badge-xs badge-error">{issues.filter(i => i.status === 'PENDING').length}</span>
-            )}
-          </button>
+        <div className="flex items-center gap-3">
+          {/* Category Filter */}
+          <div className="flex gap-1">
+            {[
+              { key: 'ALL', label: 'All', icon: <Package className="w-3 h-3" /> },
+              { key: 'TOOL', label: 'Tools', icon: <Wrench className="w-3 h-3" /> },
+              { key: 'DEVICE', label: 'Devices', icon: <Zap className="w-3 h-3" /> },
+              { key: 'CONSUMABLE', label: 'Consumables', icon: <Box className="w-3 h-3" /> },
+            ].map(cat => (
+              <button
+                key={cat.key}
+                onClick={() => setCategoryFilter(cat.key)}
+                className={`btn btn-sm gap-1 ${categoryFilter === cat.key ? 'btn-accent' : 'btn-ghost'}`}
+              >
+                {cat.icon}
+                <span className="hidden sm:inline">{cat.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="join">
+            <button
+              className={`join-item btn btn-sm ${activeTab === 'metrics' ? 'btn-accent' : 'btn-outline'}`}
+              onClick={() => setActiveTab('metrics')}
+            >
+              Metrics
+            </button>
+            <button
+              className={`join-item btn btn-sm ${activeTab === 'issues' ? 'btn-accent' : 'btn-outline'}`}
+              onClick={() => setActiveTab('issues')}
+            >
+              Issue Reports
+              {filteredIssues.filter(i => i.status === 'PENDING').length > 0 && (
+                <span className="badge badge-xs badge-error">{filteredIssues.filter(i => i.status === 'PENDING').length}</span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -157,13 +199,13 @@ export default function AdminAnalyticsClient() {
             <div className="card bg-base-100 shadow border border-base-300">
               <div className="card-body p-4">
                 <div className="text-sm text-base-content/60">Tool Types</div>
-                <div className="text-3xl font-bold">{summary.totalTypes}</div>
+                <div className="text-3xl font-bold">{filteredSummary.totalTypes}</div>
               </div>
             </div>
             <div className="card bg-base-100 shadow border border-base-300">
               <div className="card-body p-4">
                 <div className="text-sm text-base-content/60">Total Items</div>
-                <div className="text-3xl font-bold">{summary.totalItems}</div>
+                <div className="text-3xl font-bold">{filteredSummary.totalItems}</div>
               </div>
             </div>
             <div className="card bg-base-100 shadow border border-base-300">
@@ -171,7 +213,7 @@ export default function AdminAnalyticsClient() {
                 <div className="text-sm text-base-content/60 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" /> Borrows This Month
                 </div>
-                <div className="text-3xl font-bold">{summary.totalBorrows}</div>
+                <div className="text-3xl font-bold">{filteredSummary.totalBorrows}</div>
               </div>
             </div>
             <div className="card bg-base-100 shadow border border-base-300">
@@ -179,7 +221,7 @@ export default function AdminAnalyticsClient() {
                 <div className="text-sm text-base-content/60 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> Low Stock Warnings
                 </div>
-                <div className="text-3xl font-bold text-warning">{summary.totalWarnings}</div>
+                <div className="text-3xl font-bold text-warning">{filteredSummary.totalWarnings}</div>
               </div>
             </div>
           </div>
@@ -188,50 +230,54 @@ export default function AdminAnalyticsClient() {
           <div className="card bg-base-100 shadow border border-base-300">
             <div className="card-body">
               <h2 className="card-title mb-4">Tool Type Metrics</h2>
-              <div className="overflow-x-auto">
-                <table className="table table-zebra">
-                  <thead>
-                    <tr>
-                      <th>Tool Type</th>
-                      <th>Availability</th>
-                      <th className="hidden sm:table-cell">Available / Total</th>
-                      <th>Borrows/Mo</th>
-                      <th className="hidden md:table-cell">Overdue Rate</th>
-                      <th className="hidden lg:table-cell">Damage Reports</th>
-                      <th>Low Stock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {metrics.map((m) => (
-                      <tr key={m.id} className={m.isLowStock ? 'bg-warning/10' : ''}>
-                        <td>
-                          <div className="font-medium">{m.name}</div>
-                          <span className="badge badge-ghost badge-xs">{m.category}</span>
-                        </td>
-                        <td><AvailabilityBar percent={m.availabilityPercent} /></td>
-                        <td className="hidden sm:table-cell font-mono text-sm">{m.available} / {m.total}</td>
-                        <td className="font-semibold">{m.borrowsThisMonth}</td>
-                        <td className="hidden md:table-cell">
-                          <span className={m.overdueRate > 0 ? 'text-error font-semibold' : 'text-base-content/60'}>
-                            {m.overdueRate}%
-                          </span>
-                        </td>
-                        <td className="hidden lg:table-cell">{m.damageReportsThisMonth}</td>
-                        <td>
-                          {m.isLowStock ? (
-                            <span className="badge badge-warning badge-sm flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              &lt;{m.minThreshold}
-                            </span>
-                          ) : (
-                            <span className="text-base-content/40 text-sm">—</span>
-                          )}
-                        </td>
+              {filteredMetrics.length === 0 ? (
+                <div className="text-center py-8 text-base-content/50">No tool types for this category</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="table table-zebra">
+                    <thead>
+                      <tr>
+                        <th>Tool Type</th>
+                        <th>Availability</th>
+                        <th className="hidden sm:table-cell">Available / Total</th>
+                        <th>Borrows/Mo</th>
+                        <th className="hidden md:table-cell">Overdue Rate</th>
+                        <th className="hidden lg:table-cell">Damage Reports</th>
+                        <th>Low Stock</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {filteredMetrics.map((m) => (
+                        <tr key={m.id} className={m.isLowStock ? 'bg-warning/10' : ''}>
+                          <td>
+                            <div className="font-medium">{m.name}</div>
+                            <span className="badge badge-ghost badge-xs">{m.category}</span>
+                          </td>
+                          <td><AvailabilityBar percent={m.availabilityPercent} /></td>
+                          <td className="hidden sm:table-cell font-mono text-sm">{m.available} / {m.total}</td>
+                          <td className="font-semibold">{m.borrowsThisMonth}</td>
+                          <td className="hidden md:table-cell">
+                            <span className={m.overdueRate > 0 ? 'text-error font-semibold' : 'text-base-content/60'}>
+                              {m.overdueRate}%
+                            </span>
+                          </td>
+                          <td className="hidden lg:table-cell">{m.damageReportsThisMonth}</td>
+                          <td>
+                            {m.isLowStock ? (
+                              <span className="badge badge-warning badge-sm flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" />
+                                &lt;{m.minThreshold}
+                              </span>
+                            ) : (
+                              <span className="text-base-content/40 text-sm">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -241,8 +287,8 @@ export default function AdminAnalyticsClient() {
         <div className="card bg-base-100 shadow border border-base-300">
           <div className="card-body">
             <h2 className="card-title mb-4">Issue Reports</h2>
-            {issues.length === 0 ? (
-              <div className="text-center py-8 text-base-content/50">No reports yet</div>
+            {filteredIssues.length === 0 ? (
+              <div className="text-center py-8 text-base-content/50">No reports found</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="table table-zebra">
@@ -258,7 +304,7 @@ export default function AdminAnalyticsClient() {
                     </tr>
                   </thead>
                   <tbody>
-                    {issues.map(report => (
+                    {filteredIssues.map(report => (
                       <tr key={report.id}>
                         <td>
                           <span className="badge badge-sm badge-ghost">

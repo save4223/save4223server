@@ -128,13 +128,6 @@ export default function ToolsGalleryPage() {
     })
   }, [tools, searchQuery, selectedCategory, showOnlyAvailable])
 
-  const stats = useMemo(() => {
-    const totalTypes = filteredTools.length
-    const totalItems = filteredTools.reduce((sum, t) => sum + t.items.length, 0)
-    const availableItems = filteredTools.reduce((sum, t) => sum + t.items.filter(i => i.status === 'AVAILABLE').length, 0)
-    return { totalTypes, totalItems, availableItems }
-  }, [filteredTools])
-
   if (loading) {
     return (
       <main className="min-h-screen bg-base-100">
@@ -187,7 +180,9 @@ export default function ToolsGalleryPage() {
                 {language === 'en' ? '中文' : 'English'}
               </button>
               <Link href="/user/items" className="btn btn-accent btn-sm">My Items</Link>
-              <Link href="/tool-types" className="btn btn-ghost btn-sm hidden sm:inline-flex">Manage Types</Link>
+              {isAdmin && (
+                <Link href="/tool-types" className="btn btn-ghost btn-sm hidden sm:inline-flex">Manage Types</Link>
+              )}
             </div>
           </div>
 
@@ -289,16 +284,15 @@ export default function ToolsGalleryPage() {
                           {language === 'zh' && tool.descriptionCn ? tool.descriptionCn : (tool.description || 'No description')}
                         </p>
                         
-                        <div className="flex flex-wrap gap-2 mt-3">
+                        <div className="flex flex-wrap gap-2 mt-3 items-center">
                           <span className="badge badge-success">{availableCount} Available</span>
                           <span className="badge badge-ghost">{tool.items.length} Total</span>
                           <span className="badge badge-ghost">Max {tool.maxBorrowDuration}</span>
                         </div>
-
                         {tool.category === 'DEVICE' && !isAdmin && (
                           <Link
                             href={`/user/request/${tool.id}`}
-                            className="btn btn-secondary btn-sm mt-3"
+                            className="btn btn-secondary btn-sm mt-2"
                           >
                             <Shield className="w-4 h-4 mr-1" /> Request Permission
                           </Link>
