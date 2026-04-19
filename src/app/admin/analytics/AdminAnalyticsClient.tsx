@@ -68,6 +68,30 @@ export default function AdminAnalyticsClient() {
   const [error, setError] = useState<string | null>(null)
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
 
+  const metrics = data?.metrics || []
+  const summary = data?.summary || { totalTypes: 0, totalItems: 0, totalBorrows: 0, totalWarnings: 0 }
+
+  const filteredMetrics = useMemo(() => {
+    if (categoryFilter === 'ALL') return metrics
+    return metrics.filter(m => m.category === categoryFilter)
+  }, [metrics, categoryFilter])
+
+  const filteredSummary = useMemo(() => {
+    if (categoryFilter === 'ALL') return summary
+    const filtered = filteredMetrics
+    return {
+      totalTypes: filtered.length,
+      totalItems: filtered.reduce((sum, m) => sum + m.total, 0),
+      totalBorrows: filtered.reduce((sum, m) => sum + m.borrowsThisMonth, 0),
+      totalWarnings: filtered.filter(m => m.isLowStock).length,
+    }
+  }, [filteredMetrics, summary])
+
+  const filteredIssues = useMemo(() => {
+    if (categoryFilter === 'ALL') return issues
+    return issues.filter(i => i.itemType?.category === categoryFilter)
+  }, [issues, categoryFilter])
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -122,30 +146,6 @@ export default function AdminAnalyticsClient() {
       </div>
     )
   }
-
-  const metrics = data?.metrics || []
-  const summary = data?.summary || { totalTypes: 0, totalItems: 0, totalBorrows: 0, totalWarnings: 0 }
-
-  const filteredMetrics = useMemo(() => {
-    if (categoryFilter === 'ALL') return metrics
-    return metrics.filter(m => m.category === categoryFilter)
-  }, [metrics, categoryFilter])
-
-  const filteredSummary = useMemo(() => {
-    if (categoryFilter === 'ALL') return summary
-    const filtered = filteredMetrics
-    return {
-      totalTypes: filtered.length,
-      totalItems: filtered.reduce((sum, m) => sum + m.total, 0),
-      totalBorrows: filtered.reduce((sum, m) => sum + m.borrowsThisMonth, 0),
-      totalWarnings: filtered.filter(m => m.isLowStock).length,
-    }
-  }, [filteredMetrics, summary])
-
-  const filteredIssues = useMemo(() => {
-    if (categoryFilter === 'ALL') return issues
-    return issues.filter(i => i.itemType?.category === categoryFilter)
-  }, [issues, categoryFilter])
 
   return (
     <div className="space-y-6">
