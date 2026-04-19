@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
-import { Wrench, Package, Zap, Box, Search, ArrowLeft, Languages } from 'lucide-react'
+import { Wrench, Package, Zap, Box, Search, ArrowLeft, Languages, Shield } from 'lucide-react'
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type Category = 'ALL' | 'TOOL' | 'DEVICE' | 'CONSUMABLE'
@@ -294,6 +294,15 @@ export default function ToolsGalleryPage() {
                           <span className="badge badge-ghost">{tool.items.length} Total</span>
                           <span className="badge badge-ghost">Max {tool.maxBorrowDuration}</span>
                         </div>
+
+                        {tool.category === 'DEVICE' && !isAdmin && (
+                          <Link
+                            href={`/user/request/${tool.id}`}
+                            className="btn btn-secondary btn-sm mt-3"
+                          >
+                            <Shield className="w-4 h-4 mr-1" /> Request Permission
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
