@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, ArrowLeft, Package, CreditCard, Settings, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { User, ArrowLeft, Package, CreditCard, Settings, Save, AlertCircle, CheckCircle, QrCode } from 'lucide-react'
 
 interface Profile {
   id: string
@@ -246,7 +246,7 @@ export default function ProfilePage() {
               </div>
             </Link>
           )}
-          
+
           <Link href="/user/items" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
             <div className="card-body items-center text-center py-6">
               <Package className="w-8 h-8 mb-2 text-accent" />
@@ -254,12 +254,20 @@ export default function ProfilePage() {
               <p className="text-sm text-base-content/60">View borrowing history</p>
             </div>
           </Link>
-          
+
           <Link href="/user/pair-card" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
             <div className="card-body items-center text-center py-6">
               <CreditCard className="w-8 h-8 mb-2 text-accent" />
               <h3 className="font-semibold">Pair NFC Card</h3>
               <p className="text-sm text-base-content/60">Link your NFC card</p>
+            </div>
+          </Link>
+
+          <Link href="/user/signin-qr" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
+            <div className="card-body items-center text-center py-6">
+              <QrCode className="w-8 h-8 mb-2 text-accent" />
+              <h3 className="font-semibold">Sign-In QR</h3>
+              <p className="text-sm text-base-content/60">Scan to sign in</p>
             </div>
           </Link>
         </div>
