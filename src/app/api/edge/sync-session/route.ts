@@ -87,9 +87,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate UUID format
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!UUID_REGEX.test(String(session_id))) {
+      return NextResponse.json(
+        { error: 'Bad Request - session_id must be a valid UUID', value: session_id },
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    if (!UUID_REGEX.test(String(user_id))) {
+      return NextResponse.json(
+        { error: 'Bad Request - user_id must be a valid UUID', value: user_id },
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    if (!Number.isInteger(cabinet_id) || cabinet_id < 1) {
+      return NextResponse.json(
+        { error: 'Bad Request - cabinet_id must be a positive integer', value: cabinet_id },
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
     // 1. Create or update cabinet session
     const now = new Date()
-    
+
+    // Verify cabinet exists in locations table (FK constraint)
+    const location = await db.query.locations.findFirst({
+      where: eq(locations.id, cabinet_id),
+    })
+    if (!location) {
+      console.error(`[SyncSession] Location not found: cabinet_id=${cabinet_id}`)
+      return NextResponse.json(
+        { error: 'Not Found - cabinet_id not found in locations', cabinet_id },
+        { status: 404, headers: corsHeaders }
+      )
+    }
+
     // Check if session exists
     const existingSession = await db.query.cabinetSessions.findFirst({
       where: eq(cabinetSessions.id, session_id),
@@ -295,10 +328,34 @@ export async function POST(request: NextRequest) {
       },
     }, { headers: corsHeaders })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Sync session error:', error)
+    const pgCode = error?.code || error?.cause?.code
+
+    if (pgCode === '23503') {
+      console.error(`[SyncSession] FK violation: cabinet_id or user_id references missing record`)
+      return NextResponse.json(
+        { error: 'Foreign key violation', details: 'Referenced cabinet or user not found', pgCode },
+        { status: 409, headers: corsHeaders }
+      )
+    }
+    if (pgCode === '22P02') {
+      console.error(`[SyncSession] Invalid UUID format: session_id or user_id`)
+      return NextResponse.json(
+        { error: 'Invalid UUID format', details: String(error?.message || error), pgCode },
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    if (pgCode === '23505') {
+      console.error(`[SyncSession] Duplicate session: session_id already exists`)
+      return NextResponse.json(
+        { error: 'Duplicate session', details: 'Session already synced', pgCode },
+        { status: 409, headers: corsHeaders }
+      )
+    }
+
     return NextResponse.json(
-      { error: 'Internal Server Error', details: String(error) },
+      { error: 'Internal Server Error', details: String(error), pgCode: pgCode || 'unknown' },
       { status: 500, headers: corsHeaders }
     )
   }
