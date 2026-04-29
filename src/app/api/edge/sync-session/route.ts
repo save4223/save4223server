@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate UUID format
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!UUID_REGEX.test(String(session_id))) {
       return NextResponse.json(
         { error: 'Bad Request - session_id must be a valid UUID', value: session_id },
