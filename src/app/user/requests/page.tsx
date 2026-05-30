@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, FileText, Edit, XCircle, AlertTriangle, Clock } from 'lucide-react'
+import { ArrowLeft, FileText, Edit, XCircle, AlertTriangle, Clock, CheckCircle } from 'lucide-react'
 
 interface ItemType {
   id: number
@@ -161,6 +161,12 @@ export default function UserRequestsPage() {
                           <span className={`font-medium ${req.status === 'APPROVED' ? 'text-success' : req.status === 'REJECTED' ? 'text-error' : 'text-base-content/60'}`}>
                             Admin: {req.adminReviewReason}
                           </span>
+                        </div>
+                      )}
+                      {req.status === 'APPROVED' && (
+                        <div className="mt-2 alert alert-success py-2">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm">Access granted! You can now open the device cabinet with your NFC card.</span>
                         </div>
                       )}
                     </div>

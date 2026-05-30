@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
-import { Wrench, Package, Zap, Box, Search, ArrowLeft, Languages, Shield } from 'lucide-react'
+import { Wrench, Package, Zap, Box, Search, ArrowLeft, Languages, Shield, CheckCircle, Clock } from 'lucide-react'
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type Category = 'ALL' | 'TOOL' | 'DEVICE' | 'CONSUMABLE'
@@ -75,6 +75,8 @@ export default function ToolsGalleryPage() {
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [language, setLanguage] = useState<Language>('en')
+  const [approvedTypeIds, setApprovedTypeIds] = useState<Set<number>>(new Set())
+  const [pendingTypeIds, setPendingTypeIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     async function fetchData() {
@@ -92,6 +94,16 @@ export default function ToolsGalleryPage() {
         if (profileRes.ok) {
           const profile = await profileRes.json()
           setIsAdmin(profile.role === 'ADMIN')
+
+          // Fetch user's borrow requests to show access status
+          if (profile.role !== 'ADMIN') {
+            const reqRes = await fetch('/api/user/borrow-requests')
+            if (reqRes.ok) {
+              const reqs = await reqRes.json()
+              setApprovedTypeIds(new Set(reqs.filter((r: any) => r.status === 'APPROVED').map((r: any) => r.itemType.id)))
+              setPendingTypeIds(new Set(reqs.filter((r: any) => r.status === 'PENDING').map((r: any) => r.itemType.id)))
+            }
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
@@ -290,12 +302,27 @@ export default function ToolsGalleryPage() {
                           <span className="badge badge-ghost">Max {tool.maxBorrowDuration}</span>
                         </div>
                         {tool.category === 'DEVICE' && !isAdmin && (
-                          <Link
-                            href={`/user/request/${tool.id}`}
-                            className="btn btn-secondary btn-sm mt-2"
-                          >
-                            <Shield className="w-4 h-4 mr-1" /> Request Permission
-                          </Link>
+                          approvedTypeIds.has(tool.id) ? (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="badge badge-success gap-1">
+                                <CheckCircle className="w-3 h-3" /> Access Granted
+                              </span>
+                              <Link href="/user/requests" className="btn btn-ghost btn-sm text-success">
+                                Go to Cabinet
+                              </Link>
+                            </div>
+                          ) : pendingTypeIds.has(tool.id) ? (
+                            <span className="badge badge-warning gap-1 mt-2">
+                              <Clock className="w-3 h-3" /> Request Pending
+                            </span>
+                          ) : (
+                            <Link
+                              href={`/user/request/${tool.id}`}
+                              className="btn btn-secondary btn-sm mt-2"
+                            >
+                              <Shield className="w-4 h-4 mr-1" /> Request Permission
+                            </Link>
+                          )
                         )}
                       </div>
                     </div>
