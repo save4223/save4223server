@@ -20,23 +20,18 @@ export default async function Home() {
     redirect('/login')
   }
 
-  // Get user role
-  const profile = await db
-    .select({ role: profiles.role })
-    .from(profiles)
-    .where(eq(profiles.id, user.id))
-    .limit(1)
-  const role = profile[0]?.role || 'USER'
-  const isAdmin = role === 'ADMIN'
-
-  // Get statistics
-  const [typeCount, itemStats] = await Promise.all([
+  // Get user role + stats in parallel
+  const [profileResult, typeCount, itemStats] = await Promise.all([
+    db.select({ role: profiles.role }).from(profiles).where(eq(profiles.id, user.id)).limit(1),
     db.select({ count: sql<number>`count(*)` }).from(itemTypes),
     db.select({
       totalItems: sql<number>`count(*)`,
       availableItems: sql<number>`count(case when ${items.status} = 'AVAILABLE' then 1 end)`,
     }).from(items),
   ])
+
+  const role = profileResult[0]?.role || 'USER'
+  const isAdmin = role === 'ADMIN'
 
   const stats = {
     totalTypes: typeCount[0]?.count || 0,

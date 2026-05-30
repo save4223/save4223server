@@ -4,69 +4,94 @@ import { itemTypes, items, locations, profiles } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { checkAuth } from '@/utils/auth-helpers'
 
-// GET /api/tools - 获取所有工具类型及其个体
+export const dynamic = 'force-dynamic'
+
+// GET /api/tools - fetch all tool types with their items in one query
 export async function GET() {
-  // Require authentication
   const auth = await checkAuth()
   if (!auth.authorized) {
     return auth.error
   }
 
   try {
-    // 获取所有工具类型
-    const types = await db.select().from(itemTypes)
-    
-    // 如果没有工具类型，返回空数组
-    if (types.length === 0) {
-      return NextResponse.json([])
-    }
-    
-    // 获取所有物品，关联位置和借用人信息
-    // 注意: items 表使用 home_location_id 不是 location_id
-    const allItems = await db
+    // Single query: JOIN items + locations + profiles + itemTypes
+    // instead of 2 separate queries + JS grouping
+    const rows = await db
       .select({
-        item: items,
-        location: locations,
-        holder: profiles,
+        // Item type fields
+        typeId: itemTypes.id,
+        typeName: itemTypes.name,
+        typeNameCnSimplified: itemTypes.nameCnSimplified,
+        typeNameCnTraditional: itemTypes.nameCnTraditional,
+        typeCategory: itemTypes.category,
+        typeDescription: itemTypes.description,
+        typeDescriptionCn: itemTypes.descriptionCn,
+        typeImageUrl: itemTypes.imageUrl,
+        typeMaxBorrowDuration: itemTypes.maxBorrowDuration,
+        // Item fields
+        itemId: items.id,
+        itemRfidTag: items.rfidTag,
+        itemStatus: items.status,
+        itemDueAt: items.dueAt,
+        // Joined fields
+        holderName: profiles.fullName,
+        holderEmail: profiles.email,
+        locationName: locations.name,
       })
-      .from(items)
+      .from(itemTypes)
+      .leftJoin(items, eq(itemTypes.id, items.itemTypeId))
       .leftJoin(locations, eq(items.homeLocationId, locations.id))
       .leftJoin(profiles, eq(items.currentHolderId, profiles.id))
 
-    // 按工具类型分组
-    const result = types.map((type) => {
-      const typeItems = allItems
-        .filter((i) => i.item.itemTypeId === type.id)
-        .map((i) => ({
-          id: i.item.id,
-          rfidTag: i.item.rfidTag,
-          status: i.item.status,
-          holderName: i.holder?.fullName || null,
-          holderEmail: i.holder?.email || null,
-          dueAt: i.item.dueAt,
-          homeLocation: i.location?.name || 'Unknown',
-        }))
+    // Group rows by type (single pass)
+    const typeMap = new Map<number, {
+      id: number
+      name: string
+      nameCnSimplified: string | null
+      nameCnTraditional: string | null
+      category: string | null
+      description: string | null
+      descriptionCn: string | null
+      imageUrl: string | null
+      maxBorrowDuration: string | null
+      items: any[]
+    }>()
 
-      return {
-        id: type.id,
-        name: type.name,
-        nameCnSimplified: type.nameCnSimplified,
-        nameCnTraditional: type.nameCnTraditional,
-        category: type.category,
-        description: type.description,
-        descriptionCn: type.descriptionCn,
-        imageUrl: type.imageUrl,
-        maxBorrowDuration: type.maxBorrowDuration,
-        items: typeItems,
+    for (const row of rows) {
+      if (!typeMap.has(row.typeId)) {
+        typeMap.set(row.typeId, {
+          id: row.typeId,
+          name: row.typeName,
+          nameCnSimplified: row.typeNameCnSimplified,
+          nameCnTraditional: row.typeNameCnTraditional,
+          category: row.typeCategory,
+          description: row.typeDescription,
+          descriptionCn: row.typeDescriptionCn,
+          imageUrl: row.typeImageUrl,
+          maxBorrowDuration: row.typeMaxBorrowDuration,
+          items: [],
+        })
       }
-    })
 
-    return NextResponse.json(result)
+      // Only add item if it exists (leftJoin can produce null item rows for types with no items)
+      if (row.itemId) {
+        typeMap.get(row.typeId)!.items.push({
+          id: row.itemId,
+          rfidTag: row.itemRfidTag,
+          status: row.itemStatus,
+          holderName: row.holderName || null,
+          holderEmail: row.holderEmail || null,
+          dueAt: row.itemDueAt,
+          homeLocation: row.locationName || 'Unknown',
+        })
+      }
+    }
+
+    return NextResponse.json(Array.from(typeMap.values()))
   } catch (error) {
     console.error('Failed to fetch tools:', error)
-    // 如果表不存在，返回空数组而不是报错
-    if (error instanceof Error && 
-        (error.message.includes('does not exist') || 
+    if (error instanceof Error &&
+        (error.message.includes('does not exist') ||
          error.message.includes('relation') ||
          error.message.includes('Failed query'))) {
       return NextResponse.json([])

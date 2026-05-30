@@ -82,21 +82,27 @@ export default function ToolsGalleryPage() {
     async function fetchData() {
       try {
         setLoading(true)
-        
-        // Fetch tools
-        const toolsRes = await fetch('/api/tools')
-        if (!toolsRes.ok) throw new Error('Failed to fetch tools')
-        const toolsData = await toolsRes.json()
-        setTools(toolsData)
-        
-        // Fetch user profile to check admin status
-        const profileRes = await fetch('/api/user/profile')
-        if (profileRes.ok) {
-          const profile = await profileRes.json()
-          setIsAdmin(profile.role === 'ADMIN')
 
-          // Fetch user's borrow requests to show access status
-          if (profile.role !== 'ADMIN') {
+        // Fetch tools + profile in parallel
+        const [toolsRes, profileRes] = await Promise.all([
+          fetch('/api/tools'),
+          fetch('/api/user/profile'),
+        ])
+
+        if (!toolsRes.ok) throw new Error('Failed to fetch tools')
+
+        const [toolsData, profileData] = await Promise.all([
+          toolsRes.json(),
+          profileRes.ok ? profileRes.json() : null,
+        ])
+
+        setTools(toolsData)
+
+        if (profileData) {
+          setIsAdmin(profileData.role === 'ADMIN')
+
+          // Only fetch borrow requests for non-admins (depends on profile)
+          if (profileData.role !== 'ADMIN') {
             const reqRes = await fetch('/api/user/borrow-requests')
             if (reqRes.ok) {
               const reqs = await reqRes.json()
@@ -289,7 +295,7 @@ export default function ToolsGalleryPage() {
                     <div className="flex items-start gap-5">
                       <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-base-200">
                         {tool.imageUrl ? (
-                          <img src={`/api/image-proxy?url=${encodeURIComponent(tool.imageUrl)}`} alt={tool.name} className="h-full w-full object-cover" />
+                          <img src={tool.imageUrl} alt={tool.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             {tool.category === 'TOOL' && <Wrench className="w-10 h-10 text-base-content/30" />}
