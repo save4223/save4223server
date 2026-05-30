@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
-import { Wrench, Package, Zap, Box, Search, ArrowLeft, Languages, Shield, CheckCircle, Clock } from 'lucide-react'
+import { Wrench, Package, Zap, Box, Search, ArrowLeft, Languages, Shield, CheckCircle, Clock, FileUp } from 'lucide-react'
 
 type ItemStatus = 'AVAILABLE' | 'BORROWED' | 'MISSING' | 'MAINTENANCE'
 type Category = 'ALL' | 'TOOL' | 'DEVICE' | 'CONSUMABLE'
@@ -320,7 +320,7 @@ export default function ToolsGalleryPage() {
                               href={`/user/request/${tool.id}`}
                               className="btn btn-secondary btn-sm mt-2"
                             >
-                              <Shield className="w-4 h-4 mr-1" /> Request Permission
+                              <FileUp className="w-4 h-4 mr-1" /> Request Permission
                             </Link>
                           )
                         )}

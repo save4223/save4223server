@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Zap, Shield, AlertCircle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Zap, FileUp, AlertCircle, CheckCircle } from 'lucide-react'
 
 interface ItemType {
   id: number
@@ -130,15 +130,15 @@ export default function BorrowRequestPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-xl">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="card bg-base-100 shadow-md border border-base-300">
-          <div className="card-body">
+          <div className="card-body p-6 sm:p-8">
             <h1 className="card-title text-xl flex items-center gap-2 text-accent">
-              <Shield className="w-5 h-5" /> Request Borrow Permission
+              <FileUp className="w-5 h-5" /> Request Borrow Permission
             </h1>
 
             {itemType && (
-              <div className="bg-base-200 rounded-lg p-4 mt-2">
+              <div className="bg-base-200 rounded-lg p-4 mt-3">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-accent" />
                   <h2 className="font-bold">{itemType.name}</h2>
@@ -159,13 +159,13 @@ export default function BorrowRequestPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Reason for Request</span>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+              <div className="form-control gap-2">
+                <label className="label py-0">
+                  <span className="label-text font-semibold text-base">Reason for Request</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered h-28"
+                  className="textarea textarea-bordered h-32 w-full"
                   placeholder="Explain why you need this device..."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -173,27 +173,27 @@ export default function BorrowRequestPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Start Date</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="form-control gap-2">
+                  <label className="label py-0">
+                    <span className="label-text font-semibold text-base">Start Date</span>
                   </label>
                   <input
                     type="date"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={startDate}
                     min={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setStartDate(e.target.value)}
                     required
                   />
                 </div>
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">End Date</span>
+                <div className="form-control gap-2">
+                  <label className="label py-0">
+                    <span className="label-text font-semibold text-base">End Date</span>
                   </label>
                   <input
                     type="date"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={endDate}
                     min={startDate}
                     onChange={(e) => setEndDate(e.target.value)}
@@ -204,7 +204,7 @@ export default function BorrowRequestPage() {
 
               <button
                 type="submit"
-                className="btn btn-accent w-full"
+                className="btn btn-accent w-full mt-2"
                 disabled={submitting}
               >
                 {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Submit Request'}
