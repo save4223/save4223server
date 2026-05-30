@@ -235,8 +235,8 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Quick Links — desktop only */}
-        <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        {/* Quick Links */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
           <Link href="/user/items" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
             <div className="card-body items-center text-center py-6">
               <Package className="w-8 h-8 mb-2 text-accent" />
