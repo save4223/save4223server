@@ -117,6 +117,11 @@ export default function AdminAnalyticsClient() {
   }, [])
 
   async function handleIssueAction(id: number, status: 'RESOLVED' | 'DISMISSED') {
+    const msg = status === 'RESOLVED'
+      ? 'Resolve this report?\n\nThis acknowledges the issue and closes the report. Item inventory is handled separately by cabinet RFID sync.'
+      : 'Dismiss this report?\n\nThis means the report is not valid and closes it with no further action.'
+    if (!confirm(msg)) return
+
     try {
       const res = await fetch(`/api/admin/issues/${id}`, {
         method: 'PATCH',
@@ -286,7 +291,14 @@ export default function AdminAnalyticsClient() {
       {activeTab === 'issues' && (
         <div className="card bg-base-100 shadow border border-base-300">
           <div className="card-body">
-            <h2 className="card-title mb-4">Issue Reports</h2>
+            <div className="flex flex-col gap-2 mb-4">
+              <h2 className="card-title">Issue Reports</h2>
+              <p className="text-sm text-base-content/60">
+                Students report issues when something went wrong with their session (e.g. wrong item marked as borrowed, tool was already broken).
+                <strong> Resolve</strong> = acknowledge and close the report. <strong>Dismiss</strong> = report is not valid.
+                Item inventory is updated separately by the cabinet RFID sync.
+              </p>
+            </div>
             {filteredIssues.length === 0 ? (
               <div className="text-center py-8 text-base-content/50">No reports found</div>
             ) : (
@@ -341,16 +353,18 @@ export default function AdminAnalyticsClient() {
                               <button
                                 onClick={() => handleIssueAction(report.id, 'RESOLVED')}
                                 className="btn btn-success btn-xs"
-                                title="Resolve"
+                                title="Resolve — acknowledge and close this report. Item inventory is handled by cabinet sync."
                               >
                                 <CheckCircle className="w-3 h-3" />
+                                <span className="hidden lg:inline">Resolve</span>
                               </button>
                               <button
                                 onClick={() => handleIssueAction(report.id, 'DISMISSED')}
                                 className="btn btn-ghost btn-xs"
-                                title="Dismiss"
+                                title="Dismiss — mark this report as not valid / no action needed."
                               >
                                 <XCircle className="w-3 h-3" />
+                                <span className="hidden lg:inline">Dismiss</span>
                               </button>
                             </div>
                           ) : (

@@ -66,3 +66,46 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update item' }, { status: 500 })
   }
 }
+
+/**
+ * DELETE /api/admin/missing-items/[id]
+ * Permanently remove a MISSING item from the system.
+ * Cascades: related inventory_transactions and issue_reports are also deleted.
+ */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await checkAuth('ADMIN')
+  if (!auth.authorized) {
+    return auth.error
+  }
+
+  try {
+    const { id } = await params
+
+    const existing = await db
+      .select()
+      .from(items)
+      .where(eq(items.id, id))
+      .limit(1)
+
+    if (existing.length === 0) {
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 })
+    }
+
+    if (existing[0].status !== 'MISSING') {
+      return NextResponse.json(
+        { error: 'Only MISSING items can be deleted' },
+        { status: 400 }
+      )
+    }
+
+    await db.delete(items).where(eq(items.id, id))
+
+    return NextResponse.json({ success: true, deleted: id })
+  } catch (error) {
+    console.error('Failed to delete missing item:', error)
+    return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 })
+  }
+}

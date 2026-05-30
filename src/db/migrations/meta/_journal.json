@@ -50,6 +50,13 @@
       "when": 1780130612144,
       "tag": "0006_nice_spencer_smythe",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780144874679,
+      "tag": "0007_late_wasp",
+      "breakpoints": true
     }
   ]
 }

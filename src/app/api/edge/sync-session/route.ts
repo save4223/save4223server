@@ -129,7 +129,18 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingSession) {
-      // Update existing session
+      // Session already exists — if already completed, this is a retry; return immediately
+      if (existingSession.status === 'COMPLETED') {
+        console.log(`[SyncSession] Session ${session_id} already completed, skipping retry`)
+        return NextResponse.json({
+          success: true,
+          session_id,
+          message: 'Session already synced',
+          transactions: [],
+          summary: { borrowed: 0, returned: 0 },
+        }, { headers: corsHeaders })
+      }
+      // Update existing session (e.g. was ACTIVE, now closing)
       await db.update(cabinetSessions)
         .set({
           endTime: now,
@@ -302,7 +313,8 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        await sendCheckoutEmail({
+        // Fire-and-forget: don't block the response on email sending
+        sendCheckoutEmail({
           sessionId: session_id,
           userId: user_id,
           userEmail: user.email,
@@ -311,7 +323,7 @@ export async function POST(request: NextRequest) {
           returned: transactionItems.filter(i => i.action === 'RETURN'),
           cabinetName: cabinet?.name || `Cabinet ${cabinet_id}`,
           timestamp: now,
-        })
+        }).catch(err => console.error('[SyncSession] Checkout email failed:', err))
       }
     } catch (emailError) {
       // Don't fail the request if email fails

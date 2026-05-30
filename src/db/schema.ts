@@ -158,7 +158,7 @@ export const inventoryTransactions = pgTable(
   {
     id: serial('id').primaryKey(),
     sessionId: uuid('session_id').references(() => cabinetSessions.id, { onDelete: 'cascade' }).notNull(),
-    itemId: uuid('item_id').references(() => items.id).notNull(),
+    itemId: uuid('item_id').references(() => items.id, { onDelete: 'cascade' }).notNull(),
     userId: uuid('user_id').notNull(), // References auth.users(id)
     actionType: transactionActionEnum('action_type').notNull(),
     evidenceImagePath: text('evidence_image_path'),
@@ -189,7 +189,7 @@ export const pairingCodes = pgTable('pairing_codes', {
 // Issue Reports - Student-reported problems with borrowed items
 export const issueReports = pgTable('issue_reports', {
   id: serial('id').primaryKey(),
-  itemId: uuid('item_id').references(() => items.id).notNull(),
+  itemId: uuid('item_id').references(() => items.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => profiles.id).notNull(),
   reportType: issueReportTypeEnum('report_type').notNull(),
   description: text('description'),
