@@ -181,6 +181,14 @@ export default function UserRequestsPage() {
                         </button>
                       </div>
                     )}
+                    {req.status === 'APPROVED' && (
+                      <button
+                        onClick={() => handleCancel(req.id)}
+                        className="btn btn-error btn-sm btn-outline flex-shrink-0"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" /> Cancel Request
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

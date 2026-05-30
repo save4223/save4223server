@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db'
-import { borrowRequests, itemTypes } from '@/db/schema'
+import { borrowRequests, itemTypes, accessPermissions } from '@/db/schema'
 import { eq, and, ne } from 'drizzle-orm'
 import { checkAuth } from '@/utils/auth-helpers'
 
@@ -136,8 +136,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'Request not found' }, { status: 404 })
     }
 
-    if (existing[0].status !== 'PENDING') {
-      return NextResponse.json({ error: 'Only PENDING requests can be cancelled' }, { status: 400 })
+    if (existing[0].status !== 'PENDING' && existing[0].status !== 'APPROVED') {
+      return NextResponse.json({ error: 'Only PENDING or APPROVED requests can be cancelled' }, { status: 400 })
+    }
+
+    // Revoke access permission if one was granted
+    if (existing[0].accessPermissionId) {
+      await db
+        .update(accessPermissions)
+        .set({ status: 'REVOKED' })
+        .where(eq(accessPermissions.id, existing[0].accessPermissionId))
     }
 
     const updated = await db
