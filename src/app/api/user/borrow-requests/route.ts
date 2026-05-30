@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db'
 import { borrowRequests, itemTypes } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, desc } from 'drizzle-orm'
 import { checkAuth } from '@/utils/auth-helpers'
+import { sendBorrowRequestNotificationEmail } from '@/lib/email-service'
 
 function parseIntervalDays(intervalStr: string | null): number {
   if (!intervalStr) return 7
@@ -76,6 +77,17 @@ export async function POST(request: Request) {
       })
       .returning()
 
+    // Notify admins (non-blocking)
+    sendBorrowRequestNotificationEmail({
+      studentName: auth.user!.email || 'Unknown',
+      studentEmail: auth.user!.email || '',
+      deviceName: type[0].name,
+      reason: reason.trim(),
+      requestedStart,
+      requestedEnd,
+      requestId: created[0].id,
+    }).catch(err => console.error('[Email] Failed to send admin notification:', err))
+
     return NextResponse.json(created[0])
   } catch (error) {
     console.error('Failed to create borrow request:', error)
@@ -99,7 +111,7 @@ export async function GET() {
       .from(borrowRequests)
       .leftJoin(itemTypes, eq(borrowRequests.itemTypeId, itemTypes.id))
       .where(eq(borrowRequests.userId, auth.user!.id))
-      .orderBy(borrowRequests.createdAt)
+      .orderBy(desc(borrowRequests.createdAt))
 
     const result = requests.map(r => ({
       id: r.request.id,

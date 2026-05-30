@@ -220,3 +220,67 @@ export async function sendEmailViaSMTP(
 export function isEmailEnabled(): boolean {
   return EMAIL_ENABLED
 }
+
+/**
+ * Send borrow request notification to all admins
+ */
+export async function sendBorrowRequestNotificationEmail(details: {
+  studentName: string
+  studentEmail: string
+  deviceName: string
+  reason: string
+  requestedStart: string
+  requestedEnd: string
+  requestId: number
+}): Promise<void> {
+  if (!EMAIL_ENABLED) {
+    console.log('[Email] Skipping admin notification (ENABLE_EMAIL_NOTIFICATIONS=false)')
+    return
+  }
+
+  try {
+    const { db } = await import('@/db')
+    const { profiles } = await import('@/db/schema')
+    const { eq } = await import('drizzle-orm')
+
+    const admins = await db
+      .select({ email: profiles.email, fullName: profiles.fullName })
+      .from(profiles)
+      .where(eq(profiles.role, 'ADMIN'))
+
+    if (admins.length === 0) {
+      console.log('[Email] No admin users found to notify')
+      return
+    }
+
+    const subject = `New Borrow Request #${details.requestId} — ${details.deviceName}`
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h1 style="color: #2c3e50; margin: 0;">New Borrow Request</h1>
+  </div>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr><td style="padding: 8px; font-weight: bold;">Request ID</td><td style="padding: 8px;">#${details.requestId}</td></tr>
+    <tr style="background: #f8f9fa;"><td style="padding: 8px; font-weight: bold;">Student</td><td style="padding: 8px;">${details.studentName} (${details.studentEmail})</td></tr>
+    <tr><td style="padding: 8px; font-weight: bold;">Device</td><td style="padding: 8px;">${details.deviceName}</td></tr>
+    <tr style="background: #f8f9fa;"><td style="padding: 8px; font-weight: bold;">Date Range</td><td style="padding: 8px;">${new Date(details.requestedStart).toLocaleDateString()} — ${new Date(details.requestedEnd).toLocaleDateString()}</td></tr>
+    <tr><td style="padding: 8px; font-weight: bold;">Reason</td><td style="padding: 8px;">${details.reason}</td></tr>
+  </table>
+  <div style="margin-top: 20px;">
+    <a href="${process.env.NEXT_PUBLIC_SITE_URL || ''}/admin/requests" style="display: inline-block; background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Review Request</a>
+  </div>
+</body>
+</html>`
+
+    for (const admin of admins) {
+      if (admin.email) {
+        await sendEmailViaSMTP(admin.email, subject, htmlContent)
+      }
+    }
+  } catch (error) {
+    console.error('[Email] Failed to send admin notification:', error)
+  }
+}
