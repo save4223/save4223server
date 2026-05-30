@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { cabinetSessions, inventoryTransactions, items, itemTypes, locations, profiles } from '@/db/schema'
-import { eq, inArray } from 'drizzle-orm'
-import { sendCheckoutEmail } from '@/lib/email-service'
+import { cabinetSessions, inventoryTransactions, items, itemTypes, locations, profiles, borrowRequests, accessPermissions } from '@/db/schema'
+import { eq, inArray, and } from 'drizzle-orm'
+import { sendCheckoutEmail, sendUnauthorizedBorrowNotificationEmail } from '@/lib/email-service'
 
 const EDGE_API_SECRET = process.env.EDGE_API_SECRET || 'edge_device_secret_key'
 
@@ -316,6 +316,74 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       // Don't fail the request if email fails
       console.error('[SyncSession] Email notification failed:', emailError)
+    }
+
+    // 6. Verify borrowed devices match approved borrow requests
+    try {
+      if (borrowedRfids.length > 0 && location.isRestricted) {
+        // Get user's APPROVED borrow requests
+        const approvedRequests = await db
+          .select({ itemTypeId: borrowRequests.itemTypeId })
+          .from(borrowRequests)
+          .where(and(
+            eq(borrowRequests.userId, user_id),
+            eq(borrowRequests.status, 'APPROVED')
+          ))
+        const approvedTypeIds = new Set(approvedRequests.map(r => r.itemTypeId))
+
+        // Check each borrowed item
+        const unauthorizedItems: string[] = []
+        for (const rfid of borrowedRfids) {
+          const item = rfidToItem.get(rfid)
+          if (item && item.itemTypeId && !approvedTypeIds.has(item.itemTypeId)) {
+            unauthorizedItems.push(item.name || rfid)
+          }
+        }
+
+        if (unauthorizedItems.length > 0) {
+          const user = await db.query.profiles.findFirst({
+            where: eq(profiles.id, user_id),
+          })
+          sendUnauthorizedBorrowNotificationEmail({
+            userName: user?.fullName || user?.email || 'Unknown',
+            sessionId: session_id,
+            unauthorizedItems,
+            cabinetName: location.name,
+          }).catch(err => console.error('[SyncSession] Unauthorized borrow notification failed:', err))
+        }
+      }
+    } catch (verifyError) {
+      console.error('[SyncSession] Borrow verification failed:', verifyError)
+    }
+
+    // 7. Revoke access permission after device cabinet session completes
+    try {
+      if (location.isRestricted) {
+        // Find the borrow request that granted access to this cabinet
+        const linkedRequests = await db
+          .select({ id: borrowRequests.id, accessPermissionId: borrowRequests.accessPermissionId })
+          .from(borrowRequests)
+          .where(and(
+            eq(borrowRequests.userId, user_id),
+            eq(borrowRequests.status, 'APPROVED')
+          ))
+
+        for (const req of linkedRequests) {
+          if (req.accessPermissionId) {
+            await db
+              .update(accessPermissions)
+              .set({ status: 'REVOKED' })
+              .where(eq(accessPermissions.id, req.accessPermissionId))
+
+            await db
+              .update(borrowRequests)
+              .set({ status: 'EXPIRED' })
+              .where(eq(borrowRequests.id, req.id))
+          }
+        }
+      }
+    } catch (revokeError) {
+      console.error('[SyncSession] Access revocation failed:', revokeError)
     }
 
     return NextResponse.json({

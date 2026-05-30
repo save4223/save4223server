@@ -284,3 +284,58 @@ export async function sendBorrowRequestNotificationEmail(details: {
     console.error('[Email] Failed to send admin notification:', error)
   }
 }
+
+/**
+ * Send unauthorized borrow notification to admins
+ */
+export async function sendUnauthorizedBorrowNotificationEmail(details: {
+  userName: string
+  sessionId: string
+  unauthorizedItems: string[]
+  cabinetName: string
+}): Promise<void> {
+  if (!EMAIL_ENABLED) {
+    console.log('[Email] Skipping unauthorized borrow notification (disabled)')
+    return
+  }
+
+  try {
+    const { db } = await import('@/db')
+    const { profiles } = await import('@/db/schema')
+    const { eq } = await import('drizzle-orm')
+
+    const admins = await db
+      .select({ email: profiles.email })
+      .from(profiles)
+      .where(eq(profiles.role, 'ADMIN'))
+
+    if (admins.length === 0) return
+
+    const subject = `Unauthorized Borrow Alert — ${details.userName}`
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: #fee; border: 2px solid #e74c3c; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h1 style="color: #e74c3c; margin: 0;">Unauthorized Borrow Detected</h1>
+  </div>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr><td style="padding: 8px; font-weight: bold;">Student</td><td style="padding: 8px;">${details.userName}</td></tr>
+    <tr style="background: #f8f9fa;"><td style="padding: 8px; font-weight: bold;">Cabinet</td><td style="padding: 8px;">${details.cabinetName}</td></tr>
+    <tr><td style="padding: 8px; font-weight: bold;">Session</td><td style="padding: 8px;">${details.sessionId}</td></tr>
+    <tr style="background: #f8f9fa;"><td style="padding: 8px; font-weight: bold; vertical-align: top;">Unauthorized Items</td><td style="padding: 8px;"><ul style="margin: 0; padding-left: 20px;">${details.unauthorizedItems.map(i => `<li>${i}</li>`).join('')}</ul></td></tr>
+  </table>
+  <p style="margin-top: 20px; color: #666; font-size: 12px;">This is an automated alert from Save4223 Smart Lab Inventory System.</p>
+</body>
+</html>`
+
+    for (const admin of admins) {
+      if (admin.email) {
+        await sendEmailViaSMTP(admin.email, subject, htmlContent)
+      }
+    }
+  } catch (error) {
+    console.error('[Email] Failed to send unauthorized borrow notification:', error)
+  }
+}
