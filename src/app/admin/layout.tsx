@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, ClipboardList, Wrench, Settings, ArrowLeft, User, BarChart3, FileText } from 'lucide-react'
+import { Users, ClipboardList, Wrench, Settings, ArrowLeft, User, BarChart3, FileText, Package } from 'lucide-react'
 
 interface NavItem {
   href: string
@@ -16,6 +16,7 @@ const navItems: NavItem[] = [
   { href: '/admin/tools', label: 'Tools', icon: <Wrench className="w-4 h-4" /> },
   { href: '/admin/analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
   { href: '/admin/requests', label: 'Requests', icon: <FileText className="w-4 h-4" /> },
+  { href: '/admin/missing-items', label: 'Missing Items', icon: <Package className="w-4 h-4" /> },
 ]
 
 export default function AdminLayout({
