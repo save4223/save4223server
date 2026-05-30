@@ -1,0 +1,2 @@
+ALTER TABLE "borrow_requests" ADD COLUMN "access_permission_id" integer;--> statement-breakpoint
+ALTER TABLE "borrow_requests" ADD CONSTRAINT "borrow_requests_access_permission_id_access_permissions_id_fk" FOREIGN KEY ("access_permission_id") REFERENCES "public"."access_permissions"("id") ON DELETE no action ON UPDATE no action;

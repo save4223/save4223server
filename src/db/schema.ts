@@ -211,6 +211,7 @@ export const borrowRequests = pgTable('borrow_requests', {
   adminReviewReason: text('admin_review_reason'),
   reviewedBy: uuid('reviewed_by').references(() => profiles.id),
   reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  accessPermissionId: integer('access_permission_id').references(() => accessPermissions.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 

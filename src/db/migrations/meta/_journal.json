@@ -43,6 +43,13 @@
       "when": 1780129073733,
       "tag": "0005_smooth_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780130612144,
+      "tag": "0006_nice_spencer_smythe",
+      "breakpoints": true
     }
   ]
 }
