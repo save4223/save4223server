@@ -6,18 +6,7 @@ import Link from 'next/link'
 
 type ImageInputMode = 'url' | 'upload'
 
-// Check if URL is from Supabase Storage (our own uploads)
-function isSupabaseStorageUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url)
-    // Supabase storage URLs contain the project ref and bucket name
-    return parsed.hostname.includes('supabase.co') && parsed.pathname.includes('/tool-images/')
-  } catch {
-    return false
-  }
-}
-
-// Image preview component that handles both direct and proxied URLs
+// Image preview component that loads images directly
 function ImagePreview({ url }: { url: string }) {
   const [error, setError] = useState(false)
 
@@ -29,14 +18,12 @@ function ImagePreview({ url }: { url: string }) {
     )
   }
 
-  // Use direct URL for Supabase Storage, proxy for external URLs
-  const imageUrl = isSupabaseStorageUrl(url) ? url : `/api/image-proxy?url=${encodeURIComponent(url)}`
-
   return (
     <img
-      src={imageUrl}
+      src={url}
       alt="Preview"
       className="h-full w-full object-cover"
+      referrerPolicy="no-referrer"
       onError={() => setError(true)}
     />
   )

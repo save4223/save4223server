@@ -281,7 +281,7 @@ function ToolTypeRow({
         <td>
           <div className="h-12 w-12 rounded-lg overflow-hidden bg-base-200 flex items-center justify-center">
             {type.imageUrl ? (
-              <img src={`/api/image-proxy?url=${encodeURIComponent(type.imageUrl!)}`} alt={type.name} className="h-full w-full object-cover" />
+              <img src={type.imageUrl!} alt={type.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
             ) : (
               <CategoryIcon category={type.category} />
             )}
