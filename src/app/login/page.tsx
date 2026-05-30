@@ -19,11 +19,16 @@ export default function LoginPage() {
     setLoading(true)
     setMessage('')
 
+    // Use production URL for email redirect if available, otherwise fall back to current origin
+    const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+      : `${location.origin}/auth/callback`
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
+        emailRedirectTo: redirectUrl,
       },
     })
 
@@ -47,11 +52,11 @@ export default function LoginPage() {
 
     if (error) {
       setMessage(error.message)
+      setLoading(false)
     } else {
-      router.push('/')
-      router.refresh()
+      // Use hard redirect to ensure full page reload and session pickup
+      window.location.href = '/'
     }
-    setLoading(false)
   }
 
   return (

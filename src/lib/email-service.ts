@@ -270,7 +270,7 @@ export async function sendBorrowRequestNotificationEmail(details: {
     <tr><td style="padding: 8px; font-weight: bold;">Reason</td><td style="padding: 8px;">${details.reason}</td></tr>
   </table>
   <div style="margin-top: 20px;">
-    <a href="${process.env.NEXT_PUBLIC_SITE_URL || ''}/admin/requests" style="display: inline-block; background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Review Request</a>
+    <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://save4223.vercel.app'}/admin/requests" style="display: inline-block; background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Review Request</a>
   </div>
 </body>
 </html>`
