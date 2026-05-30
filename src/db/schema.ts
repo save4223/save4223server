@@ -214,6 +214,18 @@ export const borrowRequests = pgTable('borrow_requests', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+// Reconciliation Logs - Cabinet inventory reconciliation records
+export const reconciliationLogs = pgTable('reconciliation_logs', {
+  id: serial('id').primaryKey(),
+  cabinetId: integer('cabinet_id').references(() => locations.id).notNull(),
+  totalScanned: integer('total_scanned').notNull(),
+  missingCount: integer('missing_count').default(0).notNull(),
+  recoveredCount: integer('recovered_count').default(0).notNull(),
+  scannedTags: jsonb('scanned_tags'),
+  summary: text('summary'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
 // Types
 export type Profile = typeof profiles.$inferSelect
 export type NewProfile = typeof profiles.$inferInsert
@@ -237,3 +249,5 @@ export type IssueReport = typeof issueReports.$inferSelect
 export type NewIssueReport = typeof issueReports.$inferInsert
 export type BorrowRequest = typeof borrowRequests.$inferSelect
 export type NewBorrowRequest = typeof borrowRequests.$inferInsert
+export type ReconciliationLog = typeof reconciliationLogs.$inferSelect
+export type NewReconciliationLog = typeof reconciliationLogs.$inferInsert
