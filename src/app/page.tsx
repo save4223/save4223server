@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { itemTypes, items } from '@/db/schema'
 import { sql } from 'drizzle-orm'
-import { Wrench, Package, CheckCircle, ClipboardList, LayoutDashboard, User, Sparkles } from 'lucide-react'
+import { Wrench, Package, CheckCircle, ClipboardList, LayoutDashboard, User, Sparkles, FileText } from 'lucide-react'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -174,6 +174,21 @@ export default async function Home() {
               <div className="ml-6">
                 <h2 className="card-title text-xl">My Items</h2>
                 <p className="mt-2 text-base-content/70">View currently borrowed items and transaction history</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/user/requests"
+            className="card bg-base-100 shadow-md hover:shadow-lg transition-all border border-base-300"
+          >
+            <div className="card-body flex flex-row items-center">
+              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-warning">
+                <FileText className="w-8 h-8 text-warning-content" />
+              </div>
+              <div className="ml-6">
+                <h2 className="card-title text-xl">My Requests</h2>
+                <p className="mt-2 text-base-content/70">View and manage your device borrow requests</p>
               </div>
             </div>
           </Link>

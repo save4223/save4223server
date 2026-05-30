@@ -9,11 +9,16 @@ interface ItemType {
   id: number
   name: string
   nameCnSimplified: string | null
-  nameCnTraditional: string | null
   category: string
-  description: string | null
-  descriptionCn: string | null
-  maxBorrowDuration: string
+}
+
+interface BorrowRequest {
+  id: number
+  reason: string
+  requestedStart: string
+  requestedEnd: string
+  status: string
+  itemType: ItemType
 }
 
 function parseIntervalDays(intervalStr: string | null): number {
@@ -22,12 +27,13 @@ function parseIntervalDays(intervalStr: string | null): number {
   return match ? parseInt(match[1], 10) : 7
 }
 
-export default function BorrowRequestPage() {
+export default function EditRequestPage() {
   const router = useRouter()
   const params = useParams()
-  const itemTypeId = params.itemTypeId as string
+  const requestId = params.id as string
 
-  const [itemType, setItemType] = useState<ItemType | null>(null)
+  const [requestData, setRequestData] = useState<BorrowRequest | null>(null)
+  const [maxDays, setMaxDays] = useState(7)
   const [loading, setLoading] = useState(true)
   const [reason, setReason] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -37,29 +43,42 @@ export default function BorrowRequestPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    async function fetchType() {
+    async function fetchRequest() {
       try {
-        const res = await fetch(`/api/tool-types/${itemTypeId}`)
-        if (!res.ok) throw new Error('Failed to load tool type')
-        const data = await res.json()
-        if (data.category !== 'DEVICE') {
-          throw new Error('Borrow requests are only for DEVICE category items')
+        const res = await fetch('/api/user/borrow-requests')
+        if (!res.ok) throw new Error('Failed to load requests')
+        const data: BorrowRequest[] = await res.json()
+        const found = data.find(r => r.id === parseInt(requestId))
+
+        if (!found) {
+          setError('Request not found')
+          return
         }
-        setItemType(data)
-        const maxDays = parseIntervalDays(data.maxBorrowDuration)
-        const today = new Date()
-        const end = new Date(today)
-        end.setDate(end.getDate() + maxDays)
-        setStartDate(today.toISOString().split('T')[0])
-        setEndDate(end.toISOString().split('T')[0])
+
+        if (found.status !== 'PENDING') {
+          setError('This request can no longer be edited (status: ' + found.status + ')')
+          return
+        }
+
+        setRequestData(found)
+        setReason(found.reason)
+        setStartDate(new Date(found.requestedStart).toISOString().split('T')[0])
+        setEndDate(new Date(found.requestedEnd).toISOString().split('T')[0])
+
+        // Fetch item type for max borrow duration
+        const typeRes = await fetch(`/api/tool-types/${found.itemType.id}`)
+        if (typeRes.ok) {
+          const typeData = await typeRes.json()
+          setMaxDays(parseIntervalDays(typeData.maxBorrowDuration))
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)
       }
     }
-    fetchType()
-  }, [itemTypeId])
+    fetchRequest()
+  }, [requestId])
 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
@@ -67,11 +86,10 @@ export default function BorrowRequestPage() {
 
     try {
       setSubmitting(true)
-      const res = await fetch('/api/user/borrow-requests', {
-        method: 'POST',
+      const res = await fetch(`/api/user/borrow-requests/${requestId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          itemTypeId: parseInt(itemTypeId),
           reason: reason.trim(),
           requestedStart: startDate,
           requestedEnd: endDate,
@@ -79,14 +97,14 @@ export default function BorrowRequestPage() {
       })
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error || 'Failed to submit request')
+        throw new Error(err.error || 'Failed to update request')
       }
       setSuccess(true)
       setTimeout(() => {
         router.push('/user/requests')
       }, 1500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit request')
+      setError(err instanceof Error ? err.message : 'Failed to update request')
     } finally {
       setSubmitting(false)
     }
@@ -102,7 +120,7 @@ export default function BorrowRequestPage() {
     )
   }
 
-  if (error && !itemType) {
+  if (error && !requestData) {
     return (
       <main className="min-h-screen bg-base-100">
         <div className="container mx-auto px-4 py-12">
@@ -110,7 +128,7 @@ export default function BorrowRequestPage() {
             <div className="card-body items-center text-center">
               <AlertCircle className="w-12 h-12 text-error mb-2" />
               <h2 className="card-title text-error">{error}</h2>
-              <Link href="/tools" className="btn btn-accent btn-sm mt-4">Back to Tools</Link>
+              <Link href="/user/requests" className="btn btn-accent btn-sm mt-4">Back to My Requests</Link>
             </div>
           </div>
         </div>
@@ -118,14 +136,12 @@ export default function BorrowRequestPage() {
     )
   }
 
-  const maxDays = itemType ? parseIntervalDays(itemType.maxBorrowDuration) : 7
-
   return (
     <main className="min-h-screen bg-base-100">
       <div className="bg-primary shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/tools" className="btn btn-ghost btn-sm">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Tools
+          <Link href="/user/requests" className="btn btn-ghost btn-sm">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Requests
           </Link>
         </div>
       </div>
@@ -134,20 +150,18 @@ export default function BorrowRequestPage() {
         <div className="card bg-base-100 shadow-md border border-base-300">
           <div className="card-body">
             <h1 className="card-title text-xl flex items-center gap-2 text-accent">
-              <Shield className="w-5 h-5" /> Request Borrow Permission
+              <Shield className="w-5 h-5" /> Edit Request
             </h1>
 
-            {itemType && (
+            {requestData && (
               <div className="bg-base-200 rounded-lg p-4 mt-2">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-accent" />
-                  <h2 className="font-bold">{itemType.name}</h2>
+                  <h2 className="font-bold">{requestData.itemType.name}</h2>
                 </div>
-                {itemType.description && (
-                  <p className="text-sm text-base-content/60 mt-1">{itemType.description}</p>
-                )}
                 <div className="flex gap-2 mt-2">
                   <span className="badge badge-ghost badge-sm">Max borrow: {maxDays} days</span>
+                  <span className="badge badge-warning badge-sm">Request #{requestData.id}</span>
                 </div>
               </div>
             )}
@@ -155,7 +169,14 @@ export default function BorrowRequestPage() {
             {success && (
               <div className="alert alert-success mt-4">
                 <CheckCircle className="w-4 h-4" />
-                <span>Request submitted! Wait for admin approval.</span>
+                <span>Request updated successfully!</span>
+              </div>
+            )}
+
+            {error && requestData && (
+              <div className="alert alert-error mt-4">
+                <AlertCircle className="w-4 h-4" />
+                <span>{error}</span>
               </div>
             )}
 
@@ -207,7 +228,7 @@ export default function BorrowRequestPage() {
                 className="btn btn-accent w-full"
                 disabled={submitting}
               >
-                {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Submit Request'}
+                {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Save Changes'}
               </button>
             </form>
           </div>
