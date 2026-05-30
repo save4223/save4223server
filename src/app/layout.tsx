@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Smart Lab Inventory',
-  description: '智能实验室工具管理系统',
+  title: 'ISDWorks! Inventory Management System',
+  description: 'ISDWorks! Inventory Management System',
 }
 
 export default function RootLayout({

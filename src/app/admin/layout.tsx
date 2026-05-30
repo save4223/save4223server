@@ -28,6 +28,22 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-base-100">
+      {/* Mobile block */}
+      <div className="sm:hidden flex min-h-screen items-center justify-center">
+        <div className="card bg-base-100 shadow-lg border border-base-300 mx-4">
+          <div className="card-body items-center text-center py-12">
+            <Settings className="w-12 h-12 text-base-content/30 mb-4" />
+            <h2 className="card-title text-xl">Desktop Only</h2>
+            <p className="text-base-content/60 mt-2">Admin Dashboard is only available on desktop. Please switch to a larger screen.</p>
+            <Link href="/" className="btn btn-accent btn-sm mt-6">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop layout */}
+      <div className="hidden sm:block">
       {/* Top Navigation */}
       <div className="bg-primary shadow-sm">
         <div className="container mx-auto px-4 py-4">
@@ -77,6 +93,7 @@ export default function AdminLayout({
           </main>
         </div>
       </div>
+      </div>{/* end desktop-only wrapper */}
     </div>
   )
 }

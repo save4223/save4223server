@@ -210,19 +210,34 @@ export default function ToolsGalleryPage() {
             />
           </div>
 
-          {/* Category Filter */}
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.key}
-                onClick={() => setSelectedCategory(cat.key)}
-                className={`btn btn-sm ${selectedCategory === cat.key ? 'btn-accent' : 'btn-ghost'}`}
+          {/* Category Filter — dropdown on mobile, buttons on desktop */}
+          <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1">
+            {/* Mobile: dropdown */}
+            <div className="sm:hidden flex-1">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value as Category)}
+                className="select select-bordered select-sm w-full"
               >
-                <span className="mr-1">{cat.icon}</span>
-                {cat.label}
-              </button>
-            ))}
-            <div className="divider divider-horizontal mx-1"></div>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat.key} value={cat.key}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
+            {/* Desktop: buttons */}
+            <div className="hidden sm:flex gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.key}
+                  onClick={() => setSelectedCategory(cat.key)}
+                  className={`btn btn-sm ${selectedCategory === cat.key ? 'btn-accent' : 'btn-ghost'}`}
+                >
+                  <span className="mr-1">{cat.icon}</span>
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            <div className="divider divider-horizontal mx-1 hidden sm:block"></div>
             <label className="flex items-center gap-2 cursor-pointer btn btn-sm btn-ghost whitespace-nowrap">
               <input
                 type="checkbox"

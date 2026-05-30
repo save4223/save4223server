@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, ArrowLeft, Package, CreditCard, Settings, Save, AlertCircle, CheckCircle, QrCode } from 'lucide-react'
+import { User, ArrowLeft, Package, CreditCard, Save, AlertCircle, CheckCircle, QrCode } from 'lucide-react'
 
 interface Profile {
   id: string
@@ -142,8 +142,8 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  {fullName || profile?.email}
+                <h2 className="text-xl font-bold flex flex-wrap items-center gap-2">
+                  <span className="truncate">{fullName || profile?.email}</span>
                   <RoleBadge role={profile?.role || 'USER'} />
                 </h2>
                 <p className="text-base-content/60 text-sm">{profile?.email}</p>
@@ -235,18 +235,8 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-          {profile?.role === 'ADMIN' && (
-            <Link href="/admin/tool-types" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
-              <div className="card-body items-center text-center py-6">
-                <Settings className="w-8 h-8 mb-2 text-accent" />
-                <h3 className="font-semibold">Admin Dashboard</h3>
-                <p className="text-sm text-base-content/60">Manage system</p>
-              </div>
-            </Link>
-          )}
-
+        {/* Quick Links — desktop only */}
+        <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
           <Link href="/user/items" className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-300">
             <div className="card-body items-center text-center py-6">
               <Package className="w-8 h-8 mb-2 text-accent" />
