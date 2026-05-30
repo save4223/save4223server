@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AlertTriangle, CheckCircle, WrenchOff, Package } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Wrench, Package } from 'lucide-react'
 
 interface MissingItem {
   id: string
@@ -132,7 +132,7 @@ export default function AdminMissingItemsClient() {
                             className="btn btn-error btn-sm btn-outline"
                             disabled={processing === item.id}
                           >
-                            <WrenchOff className="w-4 h-4 mr-1" /> Write Off
+                            <Wrench className="w-4 h-4 mr-1" /> Write Off
                           </button>
                         </div>
                       </td>

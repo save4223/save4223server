@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       await db
         .update(items)
         .set({ status: 'MISSING', updatedAt: new Date() })
-        .where(eq(items.id, item.item_id))
+        .where(eq(items.id, item.itemId))
     }
 
     // Mark recovered items as AVAILABLE
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       await db
         .update(items)
         .set({ status: 'AVAILABLE', currentHolderId: null, dueAt: null, updatedAt: new Date() })
-        .where(eq(items.id, item.item_id))
+        .where(eq(items.id, item.itemId))
     }
 
     // Use scanned_tags as ground truth: items at this location that were NOT scanned
