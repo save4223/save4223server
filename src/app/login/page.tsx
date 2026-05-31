@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Wrench, ArrowLeft, Mail, Lock } from 'lucide-react'
 
@@ -11,7 +10,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const router = useRouter()
   const supabase = createClient()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -19,25 +17,18 @@ export default function LoginPage() {
     setLoading(true)
     setMessage('')
 
-    // Use production URL for email redirect if available, otherwise fall back to current origin
-    const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-      : `${location.origin}/auth/callback`
-
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
     })
 
     if (error) {
       setMessage(error.message)
+      setLoading(false)
     } else {
-      setMessage('Check your email for the confirmation link!')
+      setMessage('Account created! Please sign in with your credentials.')
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
