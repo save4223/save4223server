@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
+  "regions": ["hnd1"],
   "headers": [
     {
       "source": "/api/edge/(.*)",

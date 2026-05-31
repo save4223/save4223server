@@ -2,6 +2,19 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+  const isAuthPage = pathname === '/login' || pathname.startsWith('/auth/')
+  const isPublicAsset = pathname.startsWith('/_next/') ||
+                        pathname.startsWith('/api/') ||
+                        pathname.includes('.') // static files
+
+  // Skip Supabase auth call entirely for API routes, static assets, and auth pages.
+  // API routes do their own auth via checkAuth(); calling getUser() here just adds
+  // a wasted Virginia→Tokyo round-trip per request.
+  if (isPublicAsset || isAuthPage) {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -59,18 +72,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // Check if route requires authentication
-  const pathname = request.nextUrl.pathname
-  const isAuthPage = pathname === '/login' || pathname.startsWith('/auth/')
-  const isPublicAsset = pathname.startsWith('/_next/') ||
-                        pathname.startsWith('/api/') ||
-                        pathname.includes('.') // static files
-
-  // Allow public assets and auth pages
-  if (isPublicAsset || isAuthPage) {
-    return response
-  }
 
   // Redirect to login if not authenticated
   if (!user) {
